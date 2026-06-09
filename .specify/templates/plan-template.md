@@ -40,7 +40,14 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+- [ ] Layer dependency direction respected (`types` → `lib` → `hooks` → `components` → `app`)?
+- [ ] New financial logic placed in `lib/finance/`?
+- [ ] Auth checks restricted to `lib/auth/`?
+- [ ] Monetary values stored as centavos integers?
+- [ ] Truck–driver 1:1 constraint enforced at DB and lib layer?
+- [ ] Soft-delete guard for freights with linked financial entries?
+- [ ] Client Components (`"use client"`) justified and annotated with a comment?
+- [ ] Row-level security (RLS) policies cover any new database tables?
 
 ## Project Structure
 

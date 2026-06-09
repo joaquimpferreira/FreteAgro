@@ -1,0 +1,248 @@
+// Prisma schema — FreteAgro web platform
+// 7 models aligned with data-model.md
+// All monetary fields are Int (centavos); conversion to reais only in lib/finance/formatMoeda.ts
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // directUrl is required for Prisma Migrate (bypasses PgBouncer)
+  directUrl = env("DIRECT_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 1. User — authentication identity
+// ─────────────────────────────────────────────────────────────────────────────
+model User {
+  id        String   @id @default(cuid())
+  nome      String
+  email     String   @unique
+  whatsapp  String
+  // role drives routing: dono → web panel, motorista → mobile app (FR-003)
+  role      UserRole @default(dono)
+  createdAt DateTime @default(now())
+
+  frota Frota?
+
+  @@map("users")
+}
+
+enum UserRole {
+  dono
+  motorista
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 2. Frota — tenant root; every child row carries frotaId (SC-008)
+// ─────────────────────────────────────────────────────────────────────────────
+model Frota {
+  id       String  @id @default(cuid())
+  nome     String
+  cnpjCpf  String?
+  estado   String
+
+  createdAt DateTime @default(now())
+
+  // One fleet per owner (FR-008)
+  ownerId String @unique
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  caminhoes  Caminhao[]
+  motoristas Motorista[]
+  fretes     Frete[]
+  lancamentos Lancamento[]
+
+  @@map("frotas")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 3. Caminhao — truck
+// ─────────────────────────────────────────────────────────────────────────────
+model Caminhao {
+  id         String           @id @default(cuid())
+  placa      String           @unique
+  modelo     String
+  ano        Int?
+  carroceria TipoCarroceria?
+  // ativo | inativo; inactivation preserves history (FR-013)
+  status     StatusAtivo      @default(ativo)
+  createdAt  DateTime         @default(now())
+
+  frotaId String
+  frota   Frota  @relation(fields: [frotaId], references: [id], onDelete: Cascade)
+
+  // 1 truck = 1 active driver — DB @unique enforces Principle IV
+  motoristaId String?   @unique
+  motorista   Motorista? @relation(fields: [motoristaId], references: [id])
+
+  fretes Frete[]
+
+  @@map("caminhoes")
+}
+
+enum TipoCarroceria {
+  graneleiro
+  tanque
+  bau
+  plataforma
+  outro
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 4. Motorista — driver
+// ─────────────────────────────────────────────────────────────────────────────
+model Motorista {
+  id                  String        @id @default(cuid())
+  nome                String
+  cpf                 String?
+  whatsapp            String
+  // e.g. 12 = 12%; integer 0–100
+  percentualComissao  Int
+  tipoContrato        TipoContrato  @default(autonomo)
+  status              StatusAtivo   @default(ativo)
+  // false until the driver activates their account via WhatsApp invite (FR-007)
+  appAtivado          Boolean       @default(false)
+  createdAt           DateTime      @default(now())
+
+  frotaId String
+  frota   Frota  @relation(fields: [frotaId], references: [id], onDelete: Cascade)
+
+  // Back-relation from Caminhao (1:1)
+  caminhao Caminhao?
+  acertos  Acerto[]
+
+  @@map("motoristas")
+}
+
+enum TipoContrato {
+  autonomo
+  clt
+}
+
+enum StatusAtivo {
+  ativo
+  inativo
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 5. Frete — freight (central business unit)
+// ─────────────────────────────────────────────────────────────────────────────
+model Frete {
+  id         String      @id @default(cuid())
+  origem     String
+  destino    String
+  tipoCarga  TipoCarga
+  kmInicial  Int
+  // Must be >= kmInicial when set; validated in lib/ (Edge Case)
+  kmFinal    Int?
+  // Money in centavos (Principle IV / research §3)
+  valorBruto Int
+  status     StatusFrete @default(em_andamento)
+  dataInicio DateTime
+  dataFim    DateTime?
+  createdAt  DateTime    @default(now())
+
+  frotaId   String
+  frota     Frota    @relation(fields: [frotaId], references: [id], onDelete: Cascade)
+
+  caminhaoId String
+  caminhao   Caminhao @relation(fields: [caminhaoId], references: [id])
+
+  lancamentos Lancamento[]
+  // One settlement per freight (data-model §6)
+  acerto      Acerto?
+
+  @@map("fretes")
+}
+
+enum TipoCarga {
+  grao
+  oleo_soja
+  farelo
+  fertilizante
+  outro
+}
+
+enum StatusFrete {
+  em_andamento
+  concluido
+  acerto_pendente
+  acerto_realizado
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 6. Lancamento — expense / cash-flow entry
+// ─────────────────────────────────────────────────────────────────────────────
+model Lancamento {
+  id          String       @id @default(cuid())
+  tipo        TipoLancamento
+  descricao   String?
+  // Money in centavos
+  valor       Int
+  fotoUrl     String?
+  // true → deducted from driver settlement (FR-022)
+  deducaoAcerto Boolean    @default(false)
+  createdAt   DateTime     @default(now())
+
+  // freteId is null for avulso cash-flow entries (FR-030)
+  freteId String?
+  frete   Frete?  @relation(fields: [freteId], references: [id])
+
+  frotaId String
+  frota   Frota  @relation(fields: [frotaId], references: [id], onDelete: Cascade)
+
+  @@map("lancamentos")
+}
+
+enum TipoLancamento {
+  combustivel
+  borracharia
+  patio
+  pedagio
+  oficina
+  vale
+  adiantamento
+  salario
+  ipva
+  seguro
+  outro
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 7. Acerto — settlement (one per freight; FR-021–FR-025)
+// ─────────────────────────────────────────────────────────────────────────────
+model Acerto {
+  id                 String      @id @default(cuid())
+  // Snapshot of freight value at settlement time (centavos)
+  valorFrete         Int
+  // Snapshot of driver commission % at settlement time
+  percentualComissao Int
+  // valorComissao = Math.round(valorFrete * percentualComissao / 100)
+  // Single permitted rounding point (constitution Principle IV)
+  valorComissao      Int
+  // totalDeducoes = Σ Lancamento.valor where deducaoAcerto = true
+  totalDeducoes      Int
+  // saldoFinal = valorComissao − totalDeducoes (NEVER rounded — Principle IV)
+  saldoFinal         Int
+  status             StatusAcerto @default(pendente)
+  comprovanteUrl     String?
+  createdAt          DateTime    @default(now())
+  realizadoEm        DateTime?
+
+  // One settlement per freight (data-model §6)
+  freteId    String @unique
+  frete      Frete  @relation(fields: [freteId], references: [id])
+
+  motoristaId String
+  motorista   Motorista @relation(fields: [motoristaId], references: [id])
+
+  @@map("acertos")
+}
+
+enum StatusAcerto {
+  pendente
+  realizado
+}

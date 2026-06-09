@@ -1,0 +1,30 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# environment variables — NUNCA commitar
+.env
+.env.local
+.env.*.local
+.env.production
+
+# Next.js
+.next/
+out/
+build/
+
+# Prisma
+prisma/migrations/dev/
+
+# misc
+.DS_Store
+*.pem
+.vercel
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts

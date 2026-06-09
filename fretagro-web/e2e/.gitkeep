@@ -1,0 +1,2 @@
+// e2e/ — Playwright end-to-end test files.
+// Tests live here (not in src) to keep them separate from unit tests.

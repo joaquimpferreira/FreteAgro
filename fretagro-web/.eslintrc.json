@@ -1,0 +1,33 @@
+{
+  "extends": ["next/core-web-vitals", "next/typescript"],
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["@typescript-eslint", "import"],
+  "rules": {
+    // Principle I — no implicit any
+    "@typescript-eslint/no-explicit-any": "error",
+    // Principle III — no hardcoded hex colors (catches obvious patterns)
+    "no-restricted-syntax": [
+      "warn",
+      {
+        "selector": "Literal[value=/^#[0-9A-Fa-f]{3,8}$/]",
+        "message": "Hardcoded color values are forbidden. Use design tokens from tokens.ts/tokens.css instead."
+      }
+    ],
+    // Principle II — layer import discipline (lib should not import from components/app)
+    "import/no-restricted-paths": [
+      "error",
+      {
+        "zones": [
+          { "target": "./lib",   "from": "./components", "message": "lib/ must not import from components/" },
+          { "target": "./lib",   "from": "./app",        "message": "lib/ must not import from app/" },
+          { "target": "./hooks", "from": "./app",        "message": "hooks/ must not import from app/" },
+          { "target": "./types", "from": "./lib",        "message": "types/ must not import from lib/" },
+          { "target": "./types", "from": "./hooks",      "message": "types/ must not import from hooks/" },
+          { "target": "./types", "from": "./components", "message": "types/ must not import from components/" }
+        ]
+      }
+    ],
+    "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
+    "prefer-const": "error"
+  }
+}

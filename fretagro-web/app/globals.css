@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Design tokens — imported from the shared design-system directory.
+ * The @import path is relative to this file (fretagro-web/app/globals.css).
+ * postcss-import (included by Next.js) resolves it to:
+ *   /frete-agro/design-system/tokens.css
+ */
+@import '../../design-system/tokens.css';
+
+@layer base {
+  /*
+   * Dark mode is the canonical default for FreteAgro (Principle III).
+   * The <html> element always carries class="dark"; light mode is not supported
+   * in this version.
+   */
+  html {
+    @apply dark;
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--color-background-900, #0b0b08);
+    color: var(--color-grey-50, #f9fafb);
+    font-family: var(--font-family-sans, 'Inter', system-ui, sans-serif);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Ensure every input has accessible focus ring (Principle III / WCAG AA) */
+  *:focus-visible {
+    outline: 2px solid var(--color-primary-400, #16b84f);
+    outline-offset: 2px;
+  }
+
+  /* Scrollbar — dark-themed */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-grey-700, #344054);
+    border-radius: 3px;
+  }
+}
+
+@layer utilities {
+  /* Semantic surface utilities that map to dark-mode surface tokens */
+  .bg-surface        { background-color: #0d0d0d; }
+  .bg-surface-card   { background-color: #161616; }
+  .bg-surface-elevated { background-color: #1e1e1e; }
+  .bg-surface-overlay  { background-color: #232323; }
+
+  /* Typography shortcuts aligned with design system scale */
+  .text-display-large  { font-size: var(--font-size-display-large, 56px); line-height: var(--line-height-display-large, 1); letter-spacing: var(--letter-spacing-display-large, -0.04em); }
+  .text-h1             { font-size: var(--font-size-h1, 40px); line-height: var(--line-height-h1, 1.2); letter-spacing: var(--letter-spacing-h1, -0.04em); }
+  .text-h2             { font-size: var(--font-size-h2, 36px); line-height: var(--line-height-h2, 1.2); letter-spacing: var(--letter-spacing-h2, -0.04em); }
+  .text-h3             { font-size: var(--font-size-h3, 32px); line-height: var(--line-height-h3, 1.2); letter-spacing: var(--letter-spacing-h3, -0.02em); }
+  .text-p-lg           { font-size: var(--font-size-paragraph-large, 18px); line-height: var(--line-height-paragraph-large, 1.45); }
+  .text-p-md           { font-size: var(--font-size-paragraph-medium, 16px); line-height: var(--line-height-paragraph-medium, 1.45); }
+  .text-p-sm           { font-size: var(--font-size-paragraph-small, 14px); line-height: var(--line-height-paragraph-small, 1.45); }
+  .text-caption        { font-size: var(--font-size-caption-small, 12px); line-height: var(--line-height-caption-small, 1.2); letter-spacing: var(--letter-spacing-caption-small, 0.12em); text-transform: uppercase; }
+}

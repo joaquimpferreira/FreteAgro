@@ -1,0 +1,599 @@
+/**
+ * Design System — CSS Custom Properties
+ * Source: Rayna UI v1.0 (Figma)
+ * Dashboard analysis: Fintech + Solar templates
+ *
+ * Import this file once at the root of your app:
+ *   @import './design-system/tokens.css';
+ *
+ * Dark mode usage:
+ *   Add class="dark" to <html> or a parent container.
+ *   All --surface-* and --bg-* vars switch automatically.
+ */
+
+:root {
+  /* ───────────────────────────────────────────────────────────────────────── */
+  /* COLORS — Primary (green)                                                  */
+  /* ───────────────────────────────────────────────────────────────────────── */
+  --color-primary-50:  #e8fff0;
+  --color-primary-75:  #adffc9;
+  --color-primary-100: #6cffa0;
+  --color-primary-200: #1ef76a;
+  --color-primary-300: #1bde5f;
+  --color-primary-400: #16b84f; /* base */
+  --color-primary-500: #0e7833;
+  --color-primary-600: #0a6229;
+  --color-primary-700: #0a4d21;
+  --color-primary-800: #073818;
+  --color-primary-900: #021d0b;
+
+  /* ───────────────────────────────────────────────────────────────────────── */
+  /* COLORS — Secondary (blue)                                                 */
+  /* ───────────────────────────────────────────────────────────────────────── */
+  --color-secondary-50:  #e3effc;
+  --color-secondary-75:  #c6ddf7;
+  --color-secondary-100: #b6d8ff;
+  --color-secondary-200: #80bbff;
+  --color-secondary-300: #3d89df;
+  --color-secondary-400: #1671d9; /* base */
+  --color-secondary-500: #0d5eba;
+  --color-secondary-600: #034592;
+  --color-secondary-700: #04326b;
+  --color-secondary-800: #012657;
+  --color-secondary-900: #001633;
+
+  /* ───────────────────────────────────────────────────────────────────────── */
+  /* COLORS — Success                                                          */
+  /* ───────────────────────────────────────────────────────────────────────── */
+  --color-success-50:  #e7f6ec;
+  --color-success-75:  #b5e3c4;
+  --color-success-100: #91d6a8;
+  --color-success-200: #5fc381;
+  --color-success-300: #40b869;
+  --color-success-400: #0f973d; /* base */
+  --color-success-500: #099137;
+  --color-success-600: #04802e;
+  --color-success-700: #036b26;
+  --color-success-800: #015b20;
+  --color-success-900: #004617;
+
+  /* ───────────────────────────────────────────────────────────────────────── */
+  /* COLORS — Warning                                                          */
+  /* ───────────────────────────────────────────────────────────────────────── */
+  --color-warning-50:  #fef6e7;
+  --color-warning-75:  #fbe2b7;
+  --color-warning-100: #f7d394;
+  --color-warning-200: #f7c164;
+  --color-warning-300: #f5b546;
+  --color-warning-400: #f3a218;
+  --color-warning-500: #dd900d;
+  --color-warning-600: #ad6f07;
+  --color-warning-700: #865503;
+  --color-warning-800: #664101;
+  --color-warning-900: #523300;
+
+  /* ───────────────────────────────────────────────────────────────────────── */
+  /* COLORS — Error                                                            */
+  /* ───────────────────────────────────────────────────────────────────────── */
+  --color-error-50:  #fbeae9;
+  --color-error-75:  #f2bcba;
+  --color-error-100: #eb9b98;
+  --color-error-200: #e26e6a;
+  --color-error-300: #dd524d;
+  --color-error-400: #d42620; /* base */
+  --color-error-500: #cb1a14;
+  --color-error-600: #ba110b;
+  --color-error-700: #9e0a05;
+  --color-error-800: #800501;
+  --color-error-900: #591000;
+
+  /* ───────────────────────────────────────────────────────────────────────── */
+  /* COLORS — Grey                                                             */
+  /* ───────────────────────────────────────────────────────────────────────── */
+  --color-grey-50:  #f9fafb;
+  --color-grey-75:  #f7f9fc;
+  --color-grey-100: #f0f2f5;
+  --color-grey-200: #e4e7ec;
+  --color-grey-300: #d0d5dd;
+  --color-grey-400: #98a2b3;
+  --color-grey-500: #667185;
+  --color-grey-600: #475367;
+  --color-grey-700: #344054;
+  --color-grey-800: #1d2739;
+  --color-grey-900: #101928;
+
+  /* ───────────────────────────────────────────────────────────────────────── */
+  /* COLORS — Shades                                                           */
+  /* ───────────────────────────────────────────────────────────────────────── */
+  --color-white:            #ffffff;
+  --color-black:            #000000;
+  --color-background-500:   #121212;
+  --color-background-900:   #0b0b08;
+
+  /* ───────────────────────────────────────────────────────────────────────── */
+  /* COLORS — OfficeBrown (warm neutral accent)                                */
+  /* ───────────────────────────────────────────────────────────────────────── */
+  --color-office-brown-50:  #fbf1f1;
+  --color-office-brown-75:  #f0e6e6;
+  --color-office-brown-100: #e4dbdb;
+  --color-office-brown-200: #cdc4c4;
+  --color-office-brown-300: #b7afaf;
+  --color-office-brown-400: #a29999;
+  --color-office-brown-500: #8d8484;
+  --color-office-brown-600: #787070;
+  --color-office-brown-700: #645d5d;
+  --color-office-brown-800: #514a4a;
+  --color-office-brown-900: #3e3838;
+
+  /* ───────────────────────────────────────────────────────────────────────── */
+  /* TYPOGRAPHY                                                                */
+  /* ───────────────────────────────────────────────────────────────────────── */
+  --font-family-sans: 'Inter', system-ui, -apple-system, sans-serif;
+
+  --font-weight-regular:  400;
+  --font-weight-medium:   500;
+  --font-weight-semibold: 600;
+  --font-weight-bold:     700;
+
+  /* Display */
+  --font-size-display-large:        56px;
+  --line-height-display-large:      1;
+  --letter-spacing-display-large:   -0.04em;
+
+  --font-size-display-small:        48px;
+  --line-height-display-small:      1;
+  --letter-spacing-display-small:   -0.04em;
+
+  /* Headings */
+  --font-size-h1:        40px;
+  --line-height-h1:      1.2;
+  --letter-spacing-h1:   -0.04em;
+
+  --font-size-h2:        36px;
+  --line-height-h2:      1.2;
+  --letter-spacing-h2:   -0.04em;
+
+  --font-size-h3:        32px;
+  --line-height-h3:      1.2;
+  --letter-spacing-h3:   -0.02em;
+
+  --font-size-h4:        28px;
+  --line-height-h4:      1.2;
+  --letter-spacing-h4:   -0.02em;
+
+  --font-size-h5:        24px;
+  --line-height-h5:      1.2;
+  --letter-spacing-h5:   -0.02em;
+
+  --font-size-h6:        20px;
+  --line-height-h6:      1.2;
+  --letter-spacing-h6:   -0.02em;
+
+  /* Paragraph */
+  --font-size-paragraph-large:   18px;
+  --line-height-paragraph-large: 1.45;
+
+  --font-size-paragraph-medium:  16px;
+  --line-height-paragraph-medium: 1.45;
+
+  --font-size-paragraph-small:   14px;
+  --line-height-paragraph-small: 1.45;
+
+  --font-size-paragraph-xsmall:  12px;
+  --line-height-paragraph-xsmall: 1.45;
+
+  /* Caption / Overline (uppercase tracked labels) */
+  --font-size-caption-large:        14px;
+  --line-height-caption-large:      1.2;
+  --letter-spacing-caption-large:   0.12em;
+
+  --font-size-caption-small:        12px;
+  --line-height-caption-small:      1.2;
+  --letter-spacing-caption-small:   0.12em;
+
+  --font-size-caption-xsmall:       10px;
+  --line-height-caption-xsmall:     1.2;
+  --letter-spacing-caption-xsmall:  0.16em;
+
+  /* ───────────────────────────────────────────────────────────────────────── */
+  /* SHADOWS / EFFECTS                                                         */
+  /* ───────────────────────────────────────────────────────────────────────── */
+
+  /* Soft single-layer */
+  --shadow-soft-xxsmall: 0 1.5px 4px -1px rgba(16, 25, 40, 0.07);
+
+  /* Normal dual-layer elevation ramp */
+  --shadow-xsmall:
+    0 5px 3px -2px rgba(0, 0, 0, 0.02),
+    0 3px 2px -2px rgba(0, 0, 0, 0.06);
+
+  --shadow-small:
+    0 2px 4px -2px rgba(0, 0, 0, 0.04),
+    0 4px 8px -2px rgba(0, 0, 0, 0.08);
+
+  --shadow-medium:
+    0 4px 6px -2px rgba(0, 0, 0, 0.06),
+    0 12px 16px -4px rgba(0, 0, 0, 0.10);
+
+  --shadow-large:
+    0 8px 8px -4px rgba(0, 0, 0, 0.04),
+    0 20px 24px -4px rgba(0, 0, 0, 0.10);
+
+  --shadow-xlarge:
+    0 8px 10px -6px rgba(16, 24, 40, 0.10),
+    0 20px 25px -5px rgba(16, 24, 40, 0.10);
+
+  --shadow-xxlarge:
+    0 12px 16px -6px rgba(16, 24, 40, 0.10),
+    0 24px 48px -12px rgba(16, 24, 40, 0.18);
+
+  /* Focus / interactive rings */
+  --shadow-focus:
+    0 0 0 4px #3069fe,
+    0 0 0 2px #ffffff;
+
+  --shadow-focus-hover:
+    0 0 0 4px rgba(209, 207, 207, 1),
+    0 1px 2px 0 rgba(16, 24, 40, 0.06),
+    0 1px 3px 0 rgba(16, 24, 40, 0.10);
+
+  --shadow-focus-line:  0 0 0 4px #fbf1f1;
+  --shadow-outline-white-2px: 0 0 0 2px #ffffff;
+
+  /* ───────────────────────────────────────────────────────────────────────── */
+  /* SPACING (4 px base grid)                                                  */
+  /* ───────────────────────────────────────────────────────────────────────── */
+  --spacing-0:    0px;
+  --spacing-0-5:  2px;
+  --spacing-1:    4px;
+  --spacing-1-5:  6px;
+  --spacing-2:    8px;
+  --spacing-2-5:  10px;
+  --spacing-3:    12px;
+  --spacing-3-5:  14px;
+  --spacing-4:    16px;
+  --spacing-5:    20px;
+  --spacing-6:    24px;
+  --spacing-7:    28px;
+  --spacing-8:    32px;
+  --spacing-9:    36px;
+  --spacing-10:   40px;
+  --spacing-11:   44px;
+  --spacing-12:   48px;
+  --spacing-14:   56px;
+  --spacing-16:   64px;
+  --spacing-20:   80px;
+  --spacing-24:   96px;
+  --spacing-28:   112px;
+  --spacing-32:   128px;
+
+  /* ───────────────────────────────────────────────────────────────────────── */
+  /* BORDER RADIUS                                                             */
+  /* ───────────────────────────────────────────────────────────────────────── */
+  --radius-none:  0px;
+  --radius-xs:    2px;
+  --radius-sm:    4px;
+  --radius-md:    6px;
+  --radius-lg:    8px;
+  --radius-card:  10px;  /* dashboard cards — balance card, stat cards */
+  --radius-xl:    12px;
+  --radius-2xl:   16px;
+  --radius-3xl:   24px;  /* content panel — inner canvas frame */
+  --radius-4xl:   28px;  /* page-level screen frame clip */
+  --radius-full:  9999px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/* Utility typography classes                                                  */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+.display-large {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-display-large);
+  line-height: var(--line-height-display-large);
+  letter-spacing: var(--letter-spacing-display-large);
+}
+
+.display-small {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-display-small);
+  line-height: var(--line-height-display-small);
+  letter-spacing: var(--letter-spacing-display-small);
+}
+
+.heading-h1 {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-h1);
+  line-height: var(--line-height-h1);
+  letter-spacing: var(--letter-spacing-h1);
+}
+
+.heading-h2 {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-h2);
+  line-height: var(--line-height-h2);
+  letter-spacing: var(--letter-spacing-h2);
+}
+
+.heading-h3 {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-h3);
+  line-height: var(--line-height-h3);
+  letter-spacing: var(--letter-spacing-h3);
+}
+
+.heading-h4 {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-h4);
+  line-height: var(--line-height-h4);
+  letter-spacing: var(--letter-spacing-h4);
+}
+
+.heading-h5 {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-h5);
+  line-height: var(--line-height-h5);
+  letter-spacing: var(--letter-spacing-h5);
+}
+
+.heading-h6 {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-h6);
+  line-height: var(--line-height-h6);
+  letter-spacing: var(--letter-spacing-h6);
+}
+
+.paragraph-large  { font-size: var(--font-size-paragraph-large);  line-height: var(--line-height-paragraph-large); }
+.paragraph-medium { font-size: var(--font-size-paragraph-medium); line-height: var(--line-height-paragraph-medium); }
+.paragraph-small  { font-size: var(--font-size-paragraph-small);  line-height: var(--line-height-paragraph-small); }
+.paragraph-xsmall { font-size: var(--font-size-paragraph-xsmall); line-height: var(--line-height-paragraph-xsmall); }
+
+.caption-large  {
+  font-size: var(--font-size-caption-large);
+  line-height: var(--line-height-caption-large);
+  letter-spacing: var(--letter-spacing-caption-large);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+}
+
+.caption-small {
+  font-size: var(--font-size-caption-small);
+  line-height: var(--line-height-caption-small);
+  letter-spacing: var(--letter-spacing-caption-small);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+}
+
+.caption-xsmall {
+  font-size: var(--font-size-caption-xsmall);
+  line-height: var(--line-height-caption-xsmall);
+  letter-spacing: var(--letter-spacing-caption-xsmall);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/* DARK MODE SURFACE TOKENS                                                    */
+/* Observed in: Fintech + Solar dashboard templates (Figma)                   */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+/*
+ * Surface hierarchy (dark mode):
+ *
+ *  --surface-page    #101928  ← sidebar, top bar, full-page bg
+ *  --surface-nav     #1d2739  ← elevated nav card inside sidebar
+ *  --surface-card    #232323  ← dark elevated cards, panels
+ *  --surface-base    #040404  ← near-black base (balance card)
+ *  --surface-canvas  #fdfdfd  ← content area inside rounded panel
+ *
+ * Semantic light-mode defaults are also defined so the same var works
+ * in both themes when toggled with the .dark class.
+ */
+
+:root {
+  /* ── Light mode defaults ───────────────────────────────────────────────── */
+  --surface-page:   var(--color-grey-50);    /* #f9fafb */
+  --surface-nav:    var(--color-grey-100);   /* #f0f2f5 */
+  --surface-card:   var(--color-white);      /* #ffffff */
+  --surface-base:   var(--color-grey-100);   /* #f0f2f5 */
+  --surface-canvas: var(--color-white);      /* #ffffff */
+
+  --text-primary:   var(--color-grey-900);   /* #101928 */
+  --text-secondary: var(--color-grey-600);   /* #475367 */
+  --text-muted:     var(--color-grey-400);   /* #98a2b3 */
+  --text-inverse:   var(--color-white);      /* #ffffff */
+
+  --border-default: var(--color-grey-200);   /* #e4e7ec */
+  --border-subtle:  var(--color-grey-100);   /* #f0f2f5 */
+}
+
+/* ── Dark mode overrides (add class="dark" to <html> or container) ────────── */
+.dark {
+  --surface-page:   #101928;   /* grey-900  — sidebar / page bg   */
+  --surface-nav:    #1d2739;   /* grey-800  — nav featured card   */
+  --surface-card:   #232323;   /* dark card background            */
+  --surface-base:   #040404;   /* near-black card base            */
+  --surface-canvas: #1d2739;   /* elevated dark content panel     */
+
+  --text-primary:   #ffffff;
+  --text-secondary: var(--color-grey-400);   /* #98a2b3 */
+  --text-muted:     var(--color-grey-500);   /* #667185 */
+  --text-inverse:   var(--color-grey-900);   /* #101928 */
+
+  --border-default: rgba(255, 255, 255, 0.10);
+  --border-subtle:  rgba(255, 255, 255, 0.06);
+
+  color-scheme: dark;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/* GRADIENTS                                                                   */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Feature card gradient: dark transparent → brand blue (Solar Sales cards) */
+  --gradient-brand-blue:  linear-gradient(135deg, rgba(15, 22, 36, 0) 0%, #0640b5 100%);
+
+  /* Brand green tint gradient for CTAs / banners */
+  --gradient-brand-green: linear-gradient(135deg, #e8fff0 0%, #16b84f 100%);
+
+  /* Dark card dimensionality gradient */
+  --gradient-dark-card:   linear-gradient(180deg, #232323 0%, #040404 100%);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/* GLASSMORPHISM / BLUR                                                        */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Blur scale */
+  --blur-sm: 8px;
+  --blur-md: 16px;
+  --blur-lg: 32px;
+  --blur-xl: 48px;
+}
+
+/*
+ * Glassmorphism utility classes.
+ *
+ * The Figma balance card achieves glass depth through:
+ *   1. Solid dark fill (#232323) + 20% black overlay.
+ *   2. A SOFT_LIGHT blended layer (#0c0b0b) creating texture / light scatter.
+ *
+ * These classes translate that pattern to CSS:
+ *   .glass-dark   → dark frosted card on dark backgrounds
+ *   .glass-light  → frosted card on light backgrounds
+ *   .glass-sidebar → nav card / floating panel on dark sidebar
+ */
+
+.glass-dark {
+  background: rgba(35, 35, 35, 0.72);
+  backdrop-filter: blur(var(--blur-md));
+  -webkit-backdrop-filter: blur(var(--blur-md));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-card);
+}
+
+/* Soft-light texture pseudo-element (apply to element using .glass-dark) */
+.glass-dark::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #0c0b0b;
+  mix-blend-mode: soft-light;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.glass-light {
+  background: rgba(255, 255, 255, 0.64);
+  backdrop-filter: blur(var(--blur-sm));
+  -webkit-backdrop-filter: blur(var(--blur-sm));
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: var(--radius-card);
+}
+
+.glass-sidebar {
+  background: rgba(29, 39, 57, 0.90);  /* grey-800 @90% */
+  backdrop-filter: blur(var(--blur-sm));
+  -webkit-backdrop-filter: blur(var(--blur-sm));
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-lg);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/* DASHBOARD LAYOUT UTILITIES                                                  */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+/*
+ * .dashboard-screen
+ *   Wraps the full page with the 28px clip observed in Solar/Fintech templates.
+ */
+.dashboard-screen {
+  border-radius: var(--radius-4xl);
+  overflow: hidden;
+  background: var(--surface-page);
+}
+
+/*
+ * .dashboard-sidebar
+ *   Dark sidebar matching Figma: #101928 bg, full height.
+ */
+.dashboard-sidebar {
+  background: var(--color-grey-900);
+  color: var(--color-white);
+}
+
+/*
+ * .dashboard-nav-card
+ *   Featured card inside sidebar (grey-800 + medium shadow).
+ */
+.dashboard-nav-card {
+  background: var(--color-grey-800);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-medium);
+}
+
+/*
+ * .dashboard-card
+ *   Standard content card in light mode.
+ *   In dark mode (.dark parent) background switches to --surface-card.
+ */
+.dashboard-card {
+  background: var(--surface-card);
+  border-radius: var(--radius-card);
+  border: 1px solid var(--border-subtle);
+}
+
+/*
+ * .dashboard-balance-card
+ *   Near-black feature card (balance / stats).
+ *   Includes the solid dark gradient and soft-light texture effect.
+ */
+.dashboard-balance-card {
+  position: relative;
+  background: var(--gradient-dark-card);
+  border-radius: var(--radius-card);
+  color: var(--color-white);
+  overflow: hidden;
+}
+
+.dashboard-balance-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #0c0b0b;
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+}
+
+/*
+ * .dashboard-feature-gradient-card
+ *   Hero / feature card with brand-blue gradient (Solar Sales pattern).
+ */
+.dashboard-feature-gradient-card {
+  background: var(--gradient-brand-blue);
+  border-radius: var(--radius-card);
+  color: var(--color-white);
+}
+
+/*
+ * .dashboard-panel
+ *   Content panel with 24px radius (inner canvas in Figma).
+ */
+.dashboard-panel {
+  background: var(--surface-canvas);
+  border-radius: var(--radius-3xl);
+  border: 1px solid var(--border-default);
+}
+
+/*
+ * .accent-bar
+ *   Top accent line in green (primary-400) used in Fintech/Solar headers.
+ *   height: 4px, full-width, positioned at top.
+ */
+.accent-bar {
+  height: 4px;
+  background: var(--color-primary-400);
+  width: 100%;
+}
