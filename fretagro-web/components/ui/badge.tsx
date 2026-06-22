@@ -1,31 +1,31 @@
-import * as React from 'react'
-import { cva, type VariantProps } from 'class-variance-authority'
-import { cn } from '@/lib/utils/cn'
+import * as React from "react"
+import { cva, type VariantProps } from "class-variance-authority"
 
-// Server Component — no interactivity needed
+import { cn } from "@/lib/utils"
+
 const badgeVariants = cva(
-  // Base — radius-badge = 8px (Principle III)
-  'inline-flex items-center rounded-badge border px-2.5 py-0.5 text-caption font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-offset-2',
+  "inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
   {
     variants: {
       variant: {
-        default:     'border-transparent bg-primary-400/20 text-primary-300',
-        secondary:   'border-transparent bg-secondary-400/20 text-secondary-300',
-        destructive: 'border-transparent bg-error-400/20 text-error-300',
-        warning:     'border-transparent bg-warning-400/20 text-warning-300',
-        success:     'border-transparent bg-success-400/20 text-success-300',
-        outline:     'border-grey-700 text-grey-300',
-        // Freight status badges
-        em_andamento:     'border-transparent bg-secondary-400/20 text-secondary-300',
-        concluido:        'border-transparent bg-grey-700/40 text-grey-300',
-        acerto_pendente:  'border-transparent bg-warning-400/20 text-warning-300',
-        acerto_realizado: 'border-transparent bg-success-400/20 text-success-300',
+        default:
+          "border-transparent bg-primary text-primary-foreground shadow hover:bg-primary/80",
+        secondary:
+          "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        destructive:
+          "border-transparent bg-destructive text-destructive-foreground shadow hover:bg-destructive/80",
+        outline: "text-foreground",
+        // FreteAgro custom variants (preserved for backward compat)
+        success:
+          "border-transparent bg-success-400/20 text-success-300 border-success-400/30",
+        warning:
+          "border-transparent bg-warning-400/20 text-warning-300 border-warning-400/30",
       },
     },
     defaultVariants: {
-      variant: 'default',
+      variant: "default",
     },
-  },
+  }
 )
 
 export interface BadgeProps
@@ -33,7 +33,9 @@ export interface BadgeProps
     VariantProps<typeof badgeVariants> {}
 
 function Badge({ className, variant, ...props }: BadgeProps) {
-  return <div className={cn(badgeVariants({ variant }), className)} {...props} />
+  return (
+    <div className={cn(badgeVariants({ variant }), className)} {...props} />
+  )
 }
 
 export { Badge, badgeVariants }

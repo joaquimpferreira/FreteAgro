@@ -10,20 +10,150 @@
  */
 @import '../../design-system/tokens.css';
 
+/*
+ * shadcn/ui CSS variables — mapped to the FreteAgro design system tokens.
+ * All values are HSL channels (no hsl() wrapper) so Tailwind can apply opacity.
+ *
+ * LIGHT theme is default (:root); .dark overrides to the dark palette.
+ * next-themes toggles the "dark" class on <html>.
+ */
+
+/* ── LIGHT THEME ──────────────────────────────────────────────────────────── */
+:root {
+  /* Backgrounds */
+  --background:          0  0% 98%;    /* #fafafa */
+  --foreground:          0  0%  7%;    /* #121212 */
+
+  --card:                0  0% 100%;   /* #ffffff */
+  --card-foreground:     0  0%  7%;
+
+  --popover:             0  0% 100%;   /* #ffffff */
+  --popover-foreground:  0  0%  7%;
+
+  /* Brand / Interactive */
+  --primary:             141 79% 40%;  /* #16b84f */
+  --primary-foreground:  0   0% 100%;  /* white text on green */
+
+  --secondary:           0  0% 95%;    /* #f2f2f2 */
+  --secondary-foreground: 0  0%  9%;
+
+  --muted:               0  0% 94%;    /* #f0f0f0 */
+  --muted-foreground:    0  0% 44%;    /* #707070 */
+
+  --accent:              141 30% 94%;  /* very light green tint */
+  --accent-foreground:   141 79% 25%;  /* dark green */
+
+  /* Feedback */
+  --destructive:         2 74% 48%;    /* #d42620 */
+  --destructive-foreground: 0 0% 100%;
+
+  /* Structural */
+  --border:              0  0% 88%;    /* #e0e0e0 */
+  --input:               0  0% 91%;    /* #e8e8e8 */
+  --ring:                141 79% 40%;
+
+  /* Border radius */
+  --radius: 0.5rem;
+
+  /* Chart palette */
+  --chart-1: 141 79% 40%;
+  --chart-2: 212 82% 47%;
+  --chart-3:  38 90% 52%;
+  --chart-4:   2 74% 48%;
+  --chart-5: 140 82% 33%;
+
+  /* Sidebar (light) */
+  --sidebar-background:           0  0% 97%;    /* #f7f7f7 */
+  --sidebar-foreground:           0  0% 15%;
+  --sidebar-primary:              141 79% 40%;
+  --sidebar-primary-foreground:   0   0% 100%;
+  --sidebar-accent:               0  0% 92%;    /* #ebebeb */
+  --sidebar-accent-foreground:    0  0% 15%;
+  --sidebar-border:               0  0% 88%;
+  --sidebar-ring:                 141 79% 40%;
+
+  /* Surface tokens (light) — space-separated R G B for Tailwind opacity support */
+  --surface-bg:       250 250 250;   /* #fafafa */
+  --surface-card:     255 255 255;   /* #ffffff */
+  --surface-elevated: 244 244 246;   /* #f4f4f6 */
+  --surface-overlay:  233 234 237;   /* #e9eaed */
+}
+
+/* ── DARK THEME ───────────────────────────────────────────────────────────── */
+.dark {
+  /* Backgrounds */
+  --background:          0  0%  6%;    /* #0f0f0f */
+  --foreground:          0  0% 95%;    /* #f2f2f2 */
+
+  --card:                0  0% 10%;   /* #1a1a1a */
+  --card-foreground:     0  0% 95%;
+
+  --popover:             0  0% 14%;   /* #242424 */
+  --popover-foreground:  0  0% 95%;
+
+  /* Brand / Interactive */
+  --primary:             141 79% 40%;
+  --primary-foreground:  0   0%  5%;
+
+  --secondary:           0  0% 18%;   /* #2e2e2e */
+  --secondary-foreground: 0  0% 90%;
+
+  --muted:               0  0% 20%;   /* #333333 */
+  --muted-foreground:    0  0% 58%;   /* #949494 */
+
+  --accent:              141 79% 40%;
+  --accent-foreground:   0   0%  5%;
+
+  /* Feedback */
+  --destructive:         2 74% 48%;
+  --destructive-foreground: 210 20% 98%;
+
+  /* Structural */
+  --border:              0  0% 16%;   /* #292929 */
+  --input:               0  0% 18%;   /* #2e2e2e */
+  --ring:                141 79% 40%;
+
+  /* Chart palette */
+  --chart-1: 141 79% 40%;
+  --chart-2: 212 82% 47%;
+  --chart-3:  38 90% 52%;
+  --chart-4:   2 74% 48%;
+  --chart-5: 140 82% 33%;
+
+  /* Sidebar (dark) */
+  --sidebar-background:           0  0%  9%;   /* #171717 */
+  --sidebar-foreground:           0  0% 88%;
+  --sidebar-primary:              141 79% 40%;
+  --sidebar-primary-foreground:   0   0%  5%;
+  --sidebar-accent:               0  0% 13%;   /* #212121 */
+  --sidebar-accent-foreground:    0  0% 90%;
+  --sidebar-border:               0  0% 16%;
+  --sidebar-ring:                 141 79% 40%;
+
+  /* Surface tokens (dark) — space-separated R G B */
+  --surface-bg:       13  13  13;   /* #0d0d0d */
+  --surface-card:     22  22  22;   /* #161616 */
+  --surface-elevated: 30  30  30;   /* #1e1e1e */
+  --surface-overlay:  35  35  35;   /* #232323 */
+}
+
 @layer base {
-  /*
-   * Dark mode is the canonical default for FreteAgro (Principle III).
-   * The <html> element always carries class="dark"; light mode is not supported
-   * in this version.
-   */
+  /* color-scheme switches with the theme class managed by next-themes */
   html {
-    @apply dark;
+    color-scheme: light;
+  }
+  html.dark {
     color-scheme: dark;
   }
 
+  /* Apply dark border color globally — shadcn standard (border-border → hsl(var(--border))) */
+  * {
+    @apply border-border;
+  }
+
   body {
-    background-color: var(--color-background-900, #0b0b08);
-    color: var(--color-grey-50, #f9fafb);
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
     font-family: var(--font-family-sans, 'Inter', system-ui, sans-serif);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -47,14 +177,15 @@
     background: var(--color-grey-700, #344054);
     border-radius: 3px;
   }
+  /* Sidebar vars are defined in :root,.dark above — no light/dark split needed (dark-only app) */
 }
 
 @layer utilities {
-  /* Semantic surface utilities that map to dark-mode surface tokens */
-  .bg-surface        { background-color: #0d0d0d; }
-  .bg-surface-card   { background-color: #161616; }
-  .bg-surface-elevated { background-color: #1e1e1e; }
-  .bg-surface-overlay  { background-color: #232323; }
+  /* Semantic surface utilities — switch automatically with the .dark class */
+  .bg-surface          { background-color: rgb(var(--surface-bg)); }
+  .bg-surface-card     { background-color: rgb(var(--surface-card)); }
+  .bg-surface-elevated { background-color: rgb(var(--surface-elevated)); }
+  .bg-surface-overlay  { background-color: rgb(var(--surface-overlay)); }
 
   /* Typography shortcuts aligned with design system scale */
   .text-display-large  { font-size: var(--font-size-display-large, 56px); line-height: var(--line-height-display-large, 1); letter-spacing: var(--letter-spacing-display-large, -0.04em); }

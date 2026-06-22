@@ -4,7 +4,6 @@
 
 import { auth } from '@/lib/auth/config'
 import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
 
 // Paths that are accessible without authentication
 const PUBLIC_PATHS = [
@@ -18,7 +17,7 @@ function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'))
 }
 
-export default auth((req: NextRequest & { auth: Awaited<ReturnType<typeof auth>> | null }) => {
+export default auth((req) => {
   const { pathname } = req.nextUrl
   const session = req.auth
 

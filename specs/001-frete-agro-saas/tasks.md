@@ -78,18 +78,18 @@ description: "Task list for FreteAgro web platform implementation"
 
 ### Implementation for User Story 1
 
-- [ ] T026 [P] [US1] Zod schemas for auth in `fretagro-web/lib/auth/schemas.ts` (cadastro, login, recuperar-senha, motorista ativar) per contracts/auth.md
-- [ ] T027 [US1] Owner registration handler `POST /api/auth/cadastro` in `fretagro-web/app/api/auth/cadastro/route.ts` (creates User + Frota, 409 EMAIL_TAKEN, 422 validation) (FR-001, FR-002)
-- [ ] T028 [US1] Next-Auth catch-all route `fretagro-web/app/api/auth/[...nextauth]/route.ts` (login via Credentials, role-based routing) (FR-003)
-- [ ] T029 [P] [US1] Password recovery handler `POST /api/auth/recuperar-senha` in `fretagro-web/app/api/auth/recuperar-senha/route.ts` (200 always, no enumeration) (FR-005)
-- [ ] T030 [P] [US1] Driver activation handler `POST /api/auth/motorista/ativar` in `fretagro-web/app/api/auth/motorista/ativar/route.ts` (token + senha, sets `appAtivado`) (FR-006, FR-007)
-- [ ] T031 [P] [US1] LoginForm in `fretagro-web/components/auth/LoginForm.tsx` (`"use client"`, RHF + Zod)
-- [ ] T032 [P] [US1] CadastroStep1Form + CadastroStep2Form in `fretagro-web/components/auth/CadastroStep1Form.tsx` and `CadastroStep2Form.tsx` (`"use client"`)
-- [ ] T033 [US1] Login page `fretagro-web/app/(auth)/login/page.tsx`
-- [ ] T034 [US1] Registration pages `fretagro-web/app/(auth)/cadastro/page.tsx` (dados pessoais) and `fretagro-web/app/(auth)/cadastro/frota/page.tsx` (dados da frota)
-- [ ] T035 [P] [US1] Password recovery page `fretagro-web/app/(auth)/recuperar-senha/page.tsx`
-- [ ] T036 [US1] Guided welcome / first-access empty-state on the dashboard root `fretagro-web/app/(dashboard)/page.tsx` directing first truck + driver registration (FR-014)
-- [ ] T037 [P] [US1] [Test] Playwright E2E for register → login → guided welcome → unauth redirect in `fretagro-web/e2e/auth.spec.ts` (incl. 375px snapshot)
+- [X] T026 [P] [US1] Zod schemas for auth in `fretagro-web/lib/auth/schemas.ts` (cadastro, login, recuperar-senha, motorista ativar) per contracts/auth.md
+- [X] T027 [US1] Owner registration handler `POST /api/auth/cadastro` in `fretagro-web/app/api/auth/cadastro/route.ts` (creates User + Frota, 409 EMAIL_TAKEN, 422 validation) (FR-001, FR-002)
+- [X] T028 [US1] Next-Auth catch-all route `fretagro-web/app/api/auth/[...nextauth]/route.ts` (login via Credentials, role-based routing) (FR-003)
+- [X] T029 [P] [US1] Password recovery handler `POST /api/auth/recuperar-senha` in `fretagro-web/app/api/auth/recuperar-senha/route.ts` (200 always, no enumeration) (FR-005)
+- [X] T030 [P] [US1] Driver activation handler `POST /api/auth/motorista/ativar` in `fretagro-web/app/api/auth/motorista/ativar/route.ts` (token + senha, sets `appAtivado`) (FR-006, FR-007)
+- [X] T031 [P] [US1] LoginForm in `fretagro-web/components/auth/LoginForm.tsx` (`"use client"`, RHF + Zod)
+- [X] T032 [P] [US1] CadastroStep1Form + CadastroStep2Form in `fretagro-web/components/auth/CadastroStep1Form.tsx` and `CadastroStep2Form.tsx` (`"use client"`)
+- [X] T033 [US1] Login page `fretagro-web/app/(auth)/login/page.tsx`
+- [X] T034 [US1] Registration pages `fretagro-web/app/(auth)/cadastro/page.tsx` (dados pessoais) and `fretagro-web/app/(auth)/cadastro/frota/page.tsx` (dados da frota)
+- [X] T035 [P] [US1] Password recovery page `fretagro-web/app/(auth)/recuperar-senha/page.tsx`
+- [X] T036 [US1] Guided welcome / first-access empty-state on the dashboard root `fretagro-web/app/(dashboard)/page.tsx` directing first truck + driver registration (FR-014)
+- [X] T037 [P] [US1] [Test] Playwright E2E for register → login → guided welcome → unauth redirect in `fretagro-web/e2e/auth.spec.ts` (incl. 375px snapshot)
 
 **Checkpoint**: User Story 1 fully functional and independently testable — MVP candidate
 
@@ -103,16 +103,16 @@ description: "Task list for FreteAgro web platform implementation"
 
 ### Implementation for User Story 2
 
-- [ ] T038 [P] [US2] Zod schemas for caminhão/motorista in `fretagro-web/lib/fleet/schemas.ts` (placa, carroceria enum, percentualComissao 0–100) per contracts
-- [ ] T039 [US2] 1-truck-1-driver binding guard in `fretagro-web/lib/fleet/vincularMotorista.ts` (defense-in-depth over DB `@unique`, explanatory 409) (FR-011)
-- [ ] T040 [US2] Caminhões collection handlers `GET`/`POST /api/caminhoes` in `fretagro-web/app/api/caminhoes/route.ts` (paginated, `?status`, `?semMotorista`, 409 PLACA_TAKEN) (FR-009, FR-015)
-- [ ] T041 [US2] Caminhão item handlers `GET`/`PATCH`/`DELETE /api/caminhoes/[id]` in `fretagro-web/app/api/caminhoes/[id]/route.ts` (bind/unbind driver via PATCH, soft-inactivate on DELETE) (FR-012, FR-013)
-- [ ] T042 [US2] Motoristas collection handlers `GET`/`POST /api/motoristas` in `fretagro-web/app/api/motoristas/route.ts` (create dispatches WhatsApp invite via `lib/notifications/whatsapp.ts`; depends on T101) (FR-010, FR-006)
-- [ ] T043 [US2] Motorista item handlers `GET`/`PATCH`/`DELETE /api/motoristas/[id]` in `fretagro-web/app/api/motoristas/[id]/route.ts` (edit, soft-inactivate preserving history) (FR-012, FR-013)
-- [ ] T044 [P] [US2] `useFrota` data hook in `fretagro-web/hooks/useFrota.ts`
-- [ ] T045 [P] [US2] Fleet components in `fretagro-web/components/frota/` (`CaminhaoCard.tsx`, `CaminhaoModal.tsx`, `MotoristaModal.tsx`, `FrotaEmptyState.tsx`) (`"use client"` for modals)
-- [ ] T046 [US2] Frota page `fretagro-web/app/(dashboard)/frota/page.tsx` (truck/driver lists, sem-motorista alert, modals)
-- [ ] T047 [P] [US2] [Test] Playwright E2E for create+bind+double-bind-rejection in `fretagro-web/e2e/frota.spec.ts`
+- [X] T038 [P] [US2] Zod schemas for caminhão/motorista in `fretagro-web/lib/fleet/schemas.ts` (placa, carroceria enum, percentualComissao 0–100) per contracts
+- [X] T039 [US2] 1-truck-1-driver binding guard in `fretagro-web/lib/fleet/vincularMotorista.ts` (defense-in-depth over DB `@unique`, explanatory 409) (FR-011)
+- [X] T040 [US2] Caminhões collection handlers `GET`/`POST /api/caminhoes` in `fretagro-web/app/api/caminhoes/route.ts` (paginated, `?status`, `?semMotorista`, 409 PLACA_TAKEN) (FR-009, FR-015)
+- [X] T041 [US2] Caminhão item handlers `GET`/`PATCH`/`DELETE /api/caminhoes/[id]` in `fretagro-web/app/api/caminhoes/[id]/route.ts` (bind/unbind driver via PATCH, soft-inactivate on DELETE) (FR-012, FR-013)
+- [X] T042 [US2] Motoristas collection handlers `GET`/`POST /api/motoristas` in `fretagro-web/app/api/motoristas/route.ts` (create dispatches WhatsApp invite via `lib/notifications/whatsapp.ts`; depends on T101) (FR-010, FR-006)
+- [X] T043 [US2] Motorista item handlers `GET`/`PATCH`/`DELETE /api/motoristas/[id]` in `fretagro-web/app/api/motoristas/[id]/route.ts` (edit, soft-inactivate preserving history) (FR-012, FR-013)
+- [X] T044 [P] [US2] `useFrota` data hook in `fretagro-web/hooks/useFrota.ts`
+- [X] T045 [P] [US2] Fleet components in `fretagro-web/components/frota/` (`CaminhaoCard.tsx`, `CaminhaoModal.tsx`, `MotoristaModal.tsx`, `FrotaEmptyState.tsx`) (`"use client"` for modals)
+- [X] T046 [US2] Frota page `fretagro-web/app/(dashboard)/frota/page.tsx` (truck/driver lists, sem-motorista alert, modals)
+- [X] T047 [P] [US2] [Test] Playwright E2E for create+bind+double-bind-rejection in `fretagro-web/e2e/frota.spec.ts`
 
 **Checkpoint**: User Stories 1 AND 2 both work independently
 
@@ -126,19 +126,19 @@ description: "Task list for FreteAgro web platform implementation"
 
 ### Implementation for User Story 3
 
-- [ ] T048 [P] [US3] Zod schemas for frete + lançamento in `fretagro-web/lib/fretes/schemas.ts` (tipoCarga enum, `valorBruto ≥ 0`, `kmFinal ≥ kmInicial`, lançamento tipo enum) per contracts
-- [ ] T049 [P] [US3] Status-transition guard in `fretagro-web/lib/fretes/statusMachine.ts` (em_andamento → concluido → acerto_pendente → acerto_realizado; 409 on invalid) (FR-018)
-- [ ] T050 [P] [US3] Soft-delete guard in `fretagro-web/lib/fretes/deleteGuard.ts` (inactivate when lançamentos/acerto exist, else hard-delete) (FR-020)
-- [ ] T051 [US3] Nota fiscal photo upload to Supabase Storage with MIME validation in `fretagro-web/lib/storage/uploadNotaFiscal.ts` (rejects corrupted/unsupported) (FR-017, Edge Case)
-- [ ] T052 [US3] Fretes collection handlers `GET`/`POST /api/fretes` in `fretagro-web/app/api/fretes/route.ts` (paginated + filters status/motoristaId/caminhaoId/from/to/rota) (FR-016, FR-019)
-- [ ] T053 [US3] Frete item handlers `GET`/`PATCH`/`DELETE /api/fretes/[id]` in `fretagro-web/app/api/fretes/[id]/route.ts` (status advance with kmFinal validation, soft-delete) (FR-018, FR-020)
-- [ ] T054 [US3] Lançamentos handlers `GET`/`POST /api/fretes/[id]/lancamentos` in `fretagro-web/app/api/fretes/[id]/lancamentos/route.ts` (expense create updates totalDespesas, multipart photo) (FR-017)
-- [ ] T055 [P] [US3] `useFretes` data hook in `fretagro-web/hooks/useFretes.ts`
-- [ ] T056 [P] [US3] Fretes components in `fretagro-web/components/fretes/` (`FreteCard.tsx`, `FreteForm.tsx`, `LancamentoForm.tsx`, `StatusBadge.tsx`) (`"use client"` for forms)
-- [ ] T057 [US3] Fretes list + filters page `fretagro-web/app/(dashboard)/fretes/page.tsx`
-- [ ] T058 [P] [US3] New freight page `fretagro-web/app/(dashboard)/fretes/novo/page.tsx`
-- [ ] T059 [US3] Freight detail page `fretagro-web/app/(dashboard)/fretes/[id]/page.tsx` (status, totalDespesas, expense list with photos)
-- [ ] T060 [P] [US3] [Test] Playwright E2E for freight create → expense → conclude → soft-delete in `fretagro-web/e2e/fretes.spec.ts`
+- [X] T048 [P] [US3] Zod schemas for frete + lançamento in `fretagro-web/lib/fretes/schemas.ts` (tipoCarga enum, `valorBruto ≥ 0`, `kmFinal ≥ kmInicial`, lançamento tipo enum) per contracts
+- [X] T049 [P] [US3] Status-transition guard in `fretagro-web/lib/fretes/statusMachine.ts` (em_andamento → concluido → acerto_pendente → acerto_realizado; 409 on invalid) (FR-018)
+- [X] T050 [P] [US3] Soft-delete guard in `fretagro-web/lib/fretes/deleteGuard.ts` (inactivate when lançamentos/acerto exist, else hard-delete) (FR-020)
+- [X] T051 [US3] Nota fiscal photo upload to Supabase Storage with MIME validation in `fretagro-web/lib/storage/uploadNotaFiscal.ts` (rejects corrupted/unsupported) (FR-017, Edge Case)
+- [X] T052 [US3] Fretes collection handlers `GET`/`POST /api/fretes` in `fretagro-web/app/api/fretes/route.ts` (paginated + filters status/motoristaId/caminhaoId/from/to/rota) (FR-016, FR-019)
+- [X] T053 [US3] Frete item handlers `GET`/`PATCH`/`DELETE /api/fretes/[id]` in `fretagro-web/app/api/fretes/[id]/route.ts` (status advance with kmFinal validation, soft-delete) (FR-018, FR-020)
+- [X] T054 [US3] Lançamentos handlers `GET`/`POST /api/fretes/[id]/lancamentos` in `fretagro-web/app/api/fretes/[id]/lancamentos/route.ts` (expense create updates totalDespesas, multipart photo) (FR-017)
+- [X] T055 [P] [US3] `useFretes` data hook in `fretagro-web/hooks/useFretes.ts`
+- [X] T056 [P] [US3] Fretes components in `fretagro-web/components/fretes/` (`FreteCard.tsx`, `FreteForm.tsx`, `LancamentoForm.tsx`, `StatusBadge.tsx`) (`"use client"` for forms)
+- [X] T057 [US3] Fretes list + filters page `fretagro-web/app/(dashboard)/fretes/page.tsx`
+- [X] T058 [P] [US3] New freight page `fretagro-web/app/(dashboard)/fretes/novo/page.tsx`
+- [X] T059 [US3] Freight detail page `fretagro-web/app/(dashboard)/fretes/[id]/page.tsx` (status, totalDespesas, expense list with photos)
+- [X] T060 [P] [US3] [Test] Playwright E2E for freight create → expense → conclude → soft-delete in `fretagro-web/e2e/fretes.spec.ts`
 
 **Checkpoint**: User Stories 1–3 independently functional
 
@@ -152,18 +152,18 @@ description: "Task list for FreteAgro web platform implementation"
 
 ### Implementation for User Story 4
 
-- [ ] T061 [US4] Settlement calculation engine in `fretagro-web/lib/finance/calcularAcerto.ts` (`valorComissao = round(valorFrete×%/100)`, `totalDeducoes` = Σ deduction lançamentos, `saldoFinal = valorComissao − totalDeducoes` never rounded) (FR-021, SC-002)
-- [ ] T062 [P] [US4] [Test] Vitest unit tests for `calcularAcerto` with quickstart V4 example values + edge cents in `fretagro-web/lib/finance/calcularAcerto.test.ts` (Gate 3)
-- [ ] T063 [P] [US4] Cost/profit helper `fretagro-web/lib/finance/calcularCusto.ts` (used by caixa later; commission feed) 
-- [ ] T064 [US4] PDF receipt generator in `fretagro-web/lib/pdf/gerarComprovante.ts` (driver data, freight data, itemized commission + deductions, saldoFinal) (FR-025)
-- [ ] T065 [US4] Acertos collection handlers `GET`/`POST /api/acertos` in `fretagro-web/app/api/acertos/route.ts` (open settlement 409 if not concluido / already exists; list with `?motoristaId`/`?status`; `motoristaId=me` driver view) (FR-021, FR-026, FR-027, FR-028)
-- [ ] T066 [US4] Acerto item handler `GET`/`PATCH /api/acertos/[id]` in `fretagro-web/app/api/acertos/[id]/route.ts` (confirm → realizado + freight acerto_realizado, 409 concurrency guard) (FR-024)
-- [ ] T067 [US4] Receipt handler `POST /api/acertos/[id]/comprovante` in `fretagro-web/app/api/acertos/[id]/comprovante/route.ts` (generate, store in Supabase Storage, return URL) (FR-025, SC-006)
-- [ ] T068 [P] [US4] `useAcertos` data hook in `fretagro-web/hooks/useAcertos.ts`
-- [ ] T069 [P] [US4] Acertos components in `fretagro-web/components/acertos/` (`AcertoCalculado.tsx`, `DeducaoForm.tsx`, `ComprovanteButton.tsx`) (`"use client"`)
-- [ ] T070 [US4] Acertos list page `fretagro-web/app/(dashboard)/acertos/page.tsx` (pending alerts)
-- [ ] T071 [US4] Per-driver settlement detail/history page `fretagro-web/app/(dashboard)/acertos/[motoristaId]/page.tsx` (FR-026)
-- [ ] T072 [P] [US4] [Test] Playwright E2E for open → confirm → PDF → second-confirm-409 in `fretagro-web/e2e/acertos.spec.ts`
+- [X] T061 [US4] Settlement calculation engine in `fretagro-web/lib/finance/calcularAcerto.ts` (`valorComissao = round(valorFrete×%/100)`, `totalDeducoes` = Σ deduction lançamentos, `saldoFinal = valorComissao − totalDeducoes` never rounded) (FR-021, SC-002)
+- [X] T062 [P] [US4] [Test] Vitest unit tests for `calcularAcerto` with quickstart V4 example values + edge cents in `fretagro-web/lib/finance/calcularAcerto.test.ts` (Gate 3)
+- [X] T063 [P] [US4] Cost/profit helper `fretagro-web/lib/finance/calcularCusto.ts` (used by caixa later; commission feed) 
+- [X] T064 [US4] PDF receipt generator in `fretagro-web/lib/pdf/gerarComprovante.ts` (driver data, freight data, itemized commission + deductions, saldoFinal) (FR-025)
+- [X] T065 [US4] Acertos collection handlers `GET`/`POST /api/acertos` in `fretagro-web/app/api/acertos/route.ts` (open settlement 409 if not concluido / already exists; list with `?motoristaId`/`?status`; `motoristaId=me` driver view) (FR-021, FR-026, FR-027, FR-028)
+- [X] T066 [US4] Acerto item handler `GET`/`PATCH /api/acertos/[id]` in `fretagro-web/app/api/acertos/[id]/route.ts` (confirm → realizado + freight acerto_realizado, 409 concurrency guard) (FR-024)
+- [X] T067 [US4] Receipt handler `POST /api/acertos/[id]/comprovante` in `fretagro-web/app/api/acertos/[id]/comprovante/route.ts` (generate, store in Supabase Storage, return URL) (FR-025, SC-006)
+- [X] T068 [P] [US4] `useAcertos` data hook in `fretagro-web/hooks/useAcertos.ts`
+- [X] T069 [P] [US4] Acertos components in `fretagro-web/components/acertos/` (`AcertoCalculado.tsx`, `DeducaoForm.tsx`, `ComprovanteButton.tsx`) (`"use client"`)
+- [X] T070 [US4] Acertos list page `fretagro-web/app/(dashboard)/acertos/page.tsx` (pending alerts)
+- [X] T071 [US4] Per-driver settlement detail/history page `fretagro-web/app/(dashboard)/acertos/[motoristaId]/page.tsx` (FR-026)
+- [X] T072 [P] [US4] [Test] Playwright E2E for open → confirm → PDF → second-confirm-409 in `fretagro-web/e2e/acertos.spec.ts`
 
 **Checkpoint**: User Stories 1–4 independently functional
 
@@ -177,14 +177,14 @@ description: "Task list for FreteAgro web platform implementation"
 
 ### Implementation for User Story 5
 
-- [ ] T073 [US5] Net-profit + expense-composition aggregation in `fretagro-web/lib/finance/calcularCaixa.ts` (`lucroLiquido = Σ receitas − Σ todas despesas`, category totals + %) (FR-031, FR-032)
-- [ ] T074 [P] [US5] [Test] Vitest unit tests for caixa aggregation in `fretagro-web/lib/finance/calcularCaixa.test.ts` (Gate 3)
-- [ ] T075 [P] [US5] Zod schema for manual caixa entry in `fretagro-web/lib/caixa/schemas.ts` (valor, data, categoria enum)
-- [ ] T076 [US5] Caixa handlers `GET`/`POST /api/caixa` in `fretagro-web/app/api/caixa/route.ts` (period statement with entradas/saídas; manual avulso outflow as freteless Lancamento) (FR-029, FR-030)
-- [ ] T077 [P] [US5] `useCaixa` data hook in `fretagro-web/hooks/useCaixa.ts`
-- [ ] T078 [P] [US5] Caixa components in `fretagro-web/components/dashboard/` (`ExtratoTable.tsx`, `LancamentoAvulsoForm.tsx`, `ComposicaoDespesas.tsx`) (`"use client"` for form)
-- [ ] T079 [US5] Caixa page `fretagro-web/app/(dashboard)/caixa/page.tsx` (period selector, statement, net profit, composition)
-- [ ] T080 [P] [US5] [Test] Playwright E2E for manual outflow + statement totals in `fretagro-web/e2e/caixa.spec.ts`
+- [X] T073 [US5] Net-profit + expense-composition aggregation in `fretagro-web/lib/finance/calcularCaixa.ts` (`lucroLiquido = Σ receitas − Σ todas despesas`, category totals + %) (FR-031, FR-032)
+- [X] T074 [P] [US5] [Test] Vitest unit tests for caixa aggregation in `fretagro-web/lib/finance/calcularCaixa.test.ts` (Gate 3)
+- [X] T075 [P] [US5] Zod schema for manual caixa entry in `fretagro-web/lib/caixa/schemas.ts` (valor, data, categoria enum)
+- [X] T076 [US5] Caixa handlers `GET`/`POST /api/caixa` in `fretagro-web/app/api/caixa/route.ts` (period statement with entradas/saídas; manual avulso outflow as freteless Lancamento) (FR-029, FR-030)
+- [X] T077 [P] [US5] `useCaixa` data hook in `fretagro-web/hooks/useCaixa.ts`
+- [X] T078 [P] [US5] Caixa components in `fretagro-web/components/dashboard/` (`ExtratoTable.tsx`, `LancamentoAvulsoForm.tsx`, `ComposicaoDespesas.tsx`) (`"use client"` for form)
+- [X] T079 [US5] Caixa page `fretagro-web/app/(dashboard)/caixa/page.tsx` (period selector, statement, net profit, composition)
+- [X] T080 [P] [US5] [Test] Playwright E2E for manual outflow + statement totals in `fretagro-web/e2e/caixa.spec.ts`
 
 **Checkpoint**: User Stories 1–5 independently functional
 
@@ -198,15 +198,15 @@ description: "Task list for FreteAgro web platform implementation"
 
 ### Implementation for User Story 6
 
-- [ ] T081 [US6] Dashboard KPI/aggregation queries in `fretagro-web/lib/dashboard/aggregates.ts` (receita bruta, total fretes, despesas, lucro líquido; alerts: acertos pendentes + caminhões sem motorista) (FR-033, FR-028, FR-015)
-- [ ] T082 [P] [US6] Excel report generator in `fretagro-web/lib/excel/gerarRelatorio.ts` (receitas, despesas categorizadas, lucro líquido) (FR-036, SC-009)
-- [ ] T083 [P] [US6] PDF report generator in `fretagro-web/lib/pdf/gerarRelatorio.ts` (reuses jsPDF) (FR-036)
-- [ ] T084 [US6] Relatórios export handler `GET /api/relatorios` in `fretagro-web/app/api/relatorios/route.ts` (`?formato=pdf|excel`, `?from`/`?to`) (FR-036)
-- [ ] T085 [P] [US6] `useDashboard` data hook in `fretagro-web/hooks/useDashboard.ts`
-- [ ] T086 [P] [US6] Dashboard chart/metric components in `fretagro-web/components/dashboard/` (`MetricCard.tsx`, `AlertaBanner.tsx`, `ReceitaDespesaChart.tsx`, `DespesasDonutChart.tsx`, `FretesRecentesTable.tsx`) (`"use client"` for Recharts)
-- [ ] T087 [US6] Wire dashboard root `fretagro-web/app/(dashboard)/page.tsx` with KPIs, alerts, charts, period filter and `export const revalidate = 300` (FR-033, FR-034, FR-035, SC-005)
-- [ ] T088 [US6] Relatórios page `fretagro-web/app/(dashboard)/relatorios/page.tsx` (period selector + PDF/Excel export buttons)
-- [ ] T089 [P] [US6] [Test] Playwright E2E for dashboard render + PDF/Excel export in `fretagro-web/e2e/dashboard.spec.ts`
+- [X] T081 [US6] Dashboard KPI/aggregation queries in `fretagro-web/lib/dashboard/aggregates.ts` (receita bruta, total fretes, despesas, lucro líquido; alerts: acertos pendentes + caminhões sem motorista) (FR-033, FR-028, FR-015)
+- [X] T082 [P] [US6] Excel report generator in `fretagro-web/lib/excel/gerarRelatorio.ts` (receitas, despesas categorizadas, lucro líquido) (FR-036, SC-009)
+- [X] T083 [P] [US6] PDF report generator in `fretagro-web/lib/pdf/gerarRelatorio.ts` (reuses jsPDF) (FR-036)
+- [X] T084 [US6] Relatórios export handler `GET /api/relatorios` in `fretagro-web/app/api/relatorios/route.ts` (`?formato=pdf|excel`, `?from`/`?to`) (FR-036)
+- [X] T085 [P] [US6] `useDashboard` data hook in `fretagro-web/hooks/useDashboard.ts`
+- [X] T086 [P] [US6] Dashboard chart/metric components in `fretagro-web/components/dashboard/` (`MetricCard.tsx`, `AlertaBanner.tsx`, `ReceitaDespesaChart.tsx`, `DespesasDonutChart.tsx`, `FretesRecentesTable.tsx`) (`"use client"` for Recharts)
+- [X] T087 [US6] Wire dashboard root `fretagro-web/app/(dashboard)/page.tsx` with KPIs, alerts, charts, period filter and `export const revalidate = 300` (FR-033, FR-034, FR-035, SC-005)
+- [X] T088 [US6] Relatórios page `fretagro-web/app/(dashboard)/relatorios/page.tsx` (period selector + PDF/Excel export buttons)
+- [X] T089 [P] [US6] [Test] Playwright E2E for dashboard render + PDF/Excel export in `fretagro-web/e2e/dashboard.spec.ts`
 
 **Checkpoint**: User Stories 1–6 independently functional — full owner web panel complete
 
@@ -220,10 +220,10 @@ description: "Task list for FreteAgro web platform implementation"
 
 ### Implementation for User Story 7
 
-- [ ] T090 [US7] Extend `lib/auth/config.ts` authorization so `motorista` sessions may start/end/expense only their own bound-truck freights (403 otherwise) in `fretagro-web/lib/auth/config.ts`
-- [ ] T091 [US7] Add idempotent-write support (client-supplied dedupe key) for synced trip/expense writes in `fretagro-web/lib/api/idempotency.ts` and apply in fretes + lançamentos handlers (FR-041 server side, SC-004)
-- [ ] T092 [US7] Confirm driver "Meus ganhos" path `GET /api/acertos?motoristaId=me` returns balance + confirmed history for the authenticated driver in `fretagro-web/app/api/acertos/route.ts` (FR-027)
-- [ ] T093 [P] [US7] [Test] Playwright/Vitest API test for driver trip start→expense→end + duplicate-sync idempotency in `fretagro-web/e2e/mobile-sync.spec.ts`
+- [X] T090 [US7] Extend `lib/auth/config.ts` authorization so `motorista` sessions may start/end/expense only their own bound-truck freights (403 otherwise) in `fretagro-web/lib/auth/config.ts`
+- [X] T091 [US7] Add idempotent-write support (client-supplied dedupe key) for synced trip/expense writes in `fretagro-web/lib/api/idempotency.ts` and apply in fretes + lançamentos handlers (FR-041 server side, SC-004)
+- [X] T092 [US7] Confirm driver "Meus ganhos" path `GET /api/acertos?motoristaId=me` returns balance + confirmed history for the authenticated driver in `fretagro-web/app/api/acertos/route.ts` (FR-027)
+- [X] T093 [P] [US7] [Test] Playwright/Vitest API test for driver trip start→expense→end + duplicate-sync idempotency in `fretagro-web/e2e/mobile-sync.spec.ts`
 
 **Checkpoint**: Web API fully supports the separate mobile driver app
 
@@ -233,13 +233,13 @@ description: "Task list for FreteAgro web platform implementation"
 
 **Purpose**: Hardening and validation across all stories
 
-- [ ] T094 [P] Multi-tenant isolation E2E (cross-fleet 404, RLS at DB level) in `fretagro-web/e2e/tenant-isolation.spec.ts` (SC-008, quickstart V7)
-- [ ] T095 [P] Verify 375px mobile snapshot coverage across all dashboard routes in Playwright (Gate 5)
-- [ ] T096 [P] Add server-side pagination assertions for all list endpoints (≤50) and audit for unbounded fetches (Principle V)
-- [ ] T097 [P] Audit all `"use client"` files for the mandatory justification comment and confirm no hardcoded hex outside token files (Principle II, III)
-- [ ] T098 Run quality gates: `pnpm tsc --noEmit`, `pnpm lint`, `pnpm test`, `pnpm test:e2e` and fix failures (quickstart Build/Quality Gates)
-- [ ] T099 [P] Finalize `fretagro-web/.env.example` and write `fretagro-web/design-system.md` reference + README setup steps (quickstart parity)
-- [ ] T100 Execute quickstart.md validation scenarios V1–V7 end-to-end and record results
+- [X] T094 [P] Multi-tenant isolation E2E (cross-fleet 404, RLS at DB level) in `fretagro-web/e2e/tenant-isolation.spec.ts` (SC-008, quickstart V7)
+- [X] T095 [P] Verify 375px mobile snapshot coverage across all dashboard routes in Playwright (Gate 5)
+- [X] T096 [P] Add server-side pagination assertions for all list endpoints (≤50) and audit for unbounded fetches (Principle V)
+- [X] T097 [P] Audit all `"use client"` files for the mandatory justification comment and confirm no hardcoded hex outside token files (Principle II, III)
+- [X] T098 Run quality gates: `pnpm tsc --noEmit`, `pnpm lint`, `pnpm test`, `pnpm test:e2e` and fix failures (quickstart Build/Quality Gates)
+- [X] T099 [P] Finalize `fretagro-web/.env.example` and write `fretagro-web/design-system.md` reference + README setup steps (quickstart parity)
+- [X] T100 Execute quickstart.md validation scenarios V1–V7 end-to-end and record results
 
 ---
 

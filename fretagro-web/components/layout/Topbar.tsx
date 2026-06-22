@@ -2,6 +2,7 @@
 'use client'
 
 import * as React from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import { Menu, LogOut, User } from 'lucide-react'
@@ -37,13 +38,19 @@ export function Topbar({ onMenuToggle, userName }: TopbarProps) {
       <div className="hidden lg:flex" />
 
       {/* Right controls */}
-      <div className="flex items-center gap-3">
-        {userName && (
-          <div className="flex items-center gap-2 text-p-sm text-grey-300">
-            <User className="h-4 w-4 text-grey-400" aria-hidden="true" />
-            <span className="hidden sm:inline">{userName}</span>
-          </div>
-        )}
+      <div className="flex items-center gap-2">
+        {/* Profile link — clicking navigates to /perfil */}
+        <Link
+          href="/perfil"
+          className="flex items-center gap-2 rounded-input px-3 py-2 text-p-sm text-grey-300 transition-colors hover:bg-grey-800 hover:text-grey-50"
+          aria-label="Ver perfil"
+        >
+          <User className="h-4 w-4 text-grey-400 shrink-0" aria-hidden="true" />
+          {userName && (
+            <span className="hidden sm:inline max-w-[160px] truncate">{userName}</span>
+          )}
+        </Link>
+
         {/* Sign out — icon-only MUST carry aria-label (Principle III) */}
         <Button
           variant="ghost"

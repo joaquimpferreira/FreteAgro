@@ -1,10 +1,8 @@
-// "use client" — input element requires DOM interaction
-'use client'
+import * as React from "react"
 
-import * as React from 'react'
-import { cn } from '@/lib/utils/cn'
+import { cn } from "@/lib/utils"
 
-export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+export interface InputProps extends React.ComponentProps<"input"> {
   // Optional label — every input MUST have a label (Principle III / WCAG AA)
   label?: string
   error?: string
@@ -18,39 +16,29 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="text-p-sm font-medium text-grey-200"
+            className="text-sm font-medium text-foreground"
           >
             {label}
           </label>
         )}
         <input
-          id={inputId}
           type={type}
+          id={inputId}
           className={cn(
-            // Base dark-theme input (Principle III — radius-input = 8px)
-            'flex h-10 w-full rounded-input border border-grey-700 bg-surface-elevated px-3 py-2',
-            'text-p-sm text-grey-50 placeholder:text-grey-500',
-            'transition-colors',
-            // Focus (Principle III — WCAG AA via globals.css :focus-visible)
-            'focus-visible:outline-none focus-visible:border-primary-400 focus-visible:ring-1 focus-visible:ring-primary-400',
-            // Error state
-            error && 'border-error-400 focus-visible:border-error-400 focus-visible:ring-error-400',
-            // Disabled
-            'disabled:cursor-not-allowed disabled:opacity-50',
-            // Mobile — full width (minimum 375px; Principle III)
-            'min-w-0',
-            className,
+            "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+            error && "border-destructive focus-visible:ring-destructive",
+            className
           )}
           ref={ref}
           {...props}
         />
         {error && (
-          <p className="text-p-sm text-error-400">{error}</p>
+          <p className="text-xs text-destructive">{error}</p>
         )}
       </div>
     )
-  },
+  }
 )
-Input.displayName = 'Input'
+Input.displayName = "Input"
 
 export { Input }

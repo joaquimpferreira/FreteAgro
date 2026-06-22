@@ -12,6 +12,7 @@ import {
   Wallet,
   BarChart3,
   Settings,
+  UserCircle,
   X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
@@ -96,8 +97,20 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
           </ul>
         </nav>
 
-        {/* Settings link */}
-        <div className="border-t border-grey-800 p-3">
+        {/* Settings + Profile links */}
+        <div className="border-t border-grey-800 p-3 flex flex-col gap-1">
+          <Link
+            href="/perfil"
+            className={cn(
+              'flex items-center gap-3 rounded-input px-3 py-2 text-p-sm font-medium transition-colors',
+              pathname.startsWith('/perfil')
+                ? 'bg-primary-400/10 text-primary-400'
+                : 'text-grey-400 hover:bg-grey-800 hover:text-grey-100',
+            )}
+          >
+            <UserCircle className="h-5 w-5 shrink-0" aria-hidden="true" />
+            Perfil
+          </Link>
           <Link
             href="/configuracoes"
             className={cn(

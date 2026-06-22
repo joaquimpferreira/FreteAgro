@@ -1,0 +1,72 @@
+#!/usr/bin/expect -f
+# Automate: shadcn init → Radix → Custom preset → accept/fill remaining prompts
+
+set timeout 120
+log_user 1
+
+spawn env NODE_TLS_REJECT_UNAUTHORIZED=0 npx shadcn@latest init
+
+# ── 1. Select component library (Radix is first — just Enter) ────────────────
+expect {
+    -re "Select a component library" {
+        send "\r"
+        exp_continue
+    }
+    -re "Which preset" {
+        # ── 2. Navigate 8 positions down to reach "Custom" ──────────────────
+        after 300
+        send "\033\[B"; after 80
+        send "\033\[B"; after 80
+        send "\033\[B"; after 80
+        send "\033\[B"; after 80
+        send "\033\[B"; after 80
+        send "\033\[B"; after 80
+        send "\033\[B"; after 80
+        send "\033\[B"; after 150
+        send "\r"
+    }
+    timeout { puts "\nTimeout waiting for library/preset prompts"; exit 1 }
+    eof   { puts "\nProcess ended early"; exit 1 }
+}
+
+# ── 3. Handle all remaining prompts ─────────────────────────────────────────
+set done 0
+while {!$done} {
+    expect {
+        # CSS file path → accept default (app/globals.css)
+        -re "global CSS" { send "\r" }
+
+        # CSS variables → yes
+        -re "(?i)css variables" { send "\r" }
+
+        # Tailwind config → accept default (tailwind.config.ts)
+        -re "(?i)tailwind" { send "\r" }
+
+        # RSC
+        -re "(?i)(react server|RSC)" { send "\r" }
+
+        # prefix
+        -re "(?i)prefix" { send "\r" }
+
+        # Import alias for utils — override with @/lib/utils
+        -re "(?i)(alias for utils|utils alias)" {
+            send "\010\010\010\010\010\010\010\010\010\010\010\010\010\010\010\010\010\010\010\010"
+            send "@/lib/utils\r"
+        }
+
+        # Import alias for components/ui/lib/hooks — accept defaults
+        -re "(?i)(alias for|import alias)" { send "\r" }
+
+        # Any other yes/no or open prompt — accept default
+        -re "\\?" { send "\r" }
+
+        eof     { set done 1 }
+        timeout {
+            puts "\nUnexpected timeout — stopping"
+            set done 1
+        }
+    }
+}
+
+wait
+puts "\n✔  shadcn init complete"

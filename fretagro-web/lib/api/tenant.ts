@@ -37,10 +37,13 @@ export async function requireFrotaId(): Promise<
     return { context: null, response: unauthorized('Frota não encontrada na sessão.') }
   }
 
+  // Next-Auth v5: id comes from token.id (explicitly set) or token.sub (default)
+  const userId = (session.user.id ?? session.user.sub) as string
+
   return {
     context: {
       frotaId,
-      userId:      session.user.id     as string,
+      userId,
       role:        session.user.role   as string,
       motoristaId: session.user.motoristaId as string | undefined,
     },

@@ -18,7 +18,10 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
   }
 
   return (
-    <DashboardLayoutClient userName={session.user.name ?? undefined}>
+    <DashboardLayoutClient
+      userName={session.user.name ?? undefined}
+      userEmail={session.user.email ?? undefined}
+    >
       {children}
     </DashboardLayoutClient>
   )

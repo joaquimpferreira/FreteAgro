@@ -39,6 +39,7 @@ const DialogContent = React.forwardRef<
       className={cn(
         // Dark theme modal — radius-modal = 16px (Principle III)
         'fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2',
+        'flex flex-col gap-4',
         'bg-surface-elevated border border-grey-700 rounded-modal p-6 shadow-lg',
         'data-[state=open]:animate-in data-[state=closed]:animate-out',
         'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
