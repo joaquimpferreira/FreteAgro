@@ -39,6 +39,9 @@
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+*Use the checklist for the target package. Delete the unused block.*
+
+### Web (fretagro-web)
 
 - [ ] Layer dependency direction respected (`types` → `lib` → `hooks` → `components` → `app`)?
 - [ ] New financial logic placed in `lib/finance/`?
@@ -48,6 +51,19 @@
 - [ ] Soft-delete guard for freights with linked financial entries?
 - [ ] Client Components (`"use client"`) justified and annotated with a comment?
 - [ ] Row-level security (RLS) policies cover any new database tables?
+
+### Mobile (fretagro-mobile)
+
+- [ ] Layer dependency direction respected (`@fretagro/types` → `lib` → `hooks` → `components` → `app`)?
+- [ ] Trip/leg km logic isolated in `lib/viagem/`?
+- [ ] Financial logic imported from `lib/finance/` (shared); no duplicate?
+- [ ] Supabase calls encapsulated in `lib/sync/`; no direct calls from components or hooks?
+- [ ] All driver field actions persist to MMKV before Supabase sync?
+- [ ] Closed legs and trips blocked from re-opening at lib layer?
+- [ ] Fuel value = `litros × preco_por_litro` (no manual total accepted)?
+- [ ] Auth token stored in SecureStore only?
+- [ ] Camera permission requested on-demand, not at app launch?
+- [ ] Touch targets ≥ 44 px for all interactive elements?
 
 ## Project Structure
 
