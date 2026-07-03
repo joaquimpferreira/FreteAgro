@@ -69,9 +69,10 @@ model Abastecimento {
   litros        Decimal
   precoPorLitro Decimal
   valorTotal    Int      // centavos — computed: round(litros × precoPorLitro × 100)
-  local         String?
-  kmAtual       Int?
-  fotoUrl       String?  // private Supabase Storage URL
+  local         String?  // posto name (optional — driver may not know at registration time)
+  kmAtual       Int?     // km at refuel point (optional)
+  fotoUrl       String?  // private Supabase Storage path (NOT a signed URL — see lib/camera/capturarNota.ts)
+  trechoId      String?  // optional FK to trechos_km — enables mediaDiesel = kmRodado / litros for diesel legs (FR-013); populated automatically from the current open leg at registration
 
   freteId String
   frete   Frete  @relation(fields: [freteId], references: [id])
@@ -141,9 +142,10 @@ export interface Abastecimento {
   litros: number
   precoPorLitro: number
   valorTotal: number    // centavos; always computed
-  local?: string
-  kmAtual?: number
-  fotoUrl?: string
+  local?: string        // posto name; optional
+  kmAtual?: number      // km at refuel point; optional
+  fotoUrl?: string      // Supabase Storage path (not a signed URL)
+  trechoId?: string     // optional FK to TrechoKm; populated from current open leg at registration; enables mediaDiesel per FR-013
   freteId: string
   frotaId: string
   createdAt: Date
@@ -191,6 +193,7 @@ Each pending operation is stored as a FIFO array under MMKV key `'sync_queue'`:
 
 ```typescript
 type OperacaoTipo =
+  | 'CREATE_VIAGEM'         // new Frete record created by driver
   | 'CREATE_TRECHO'
   | 'CLOSE_TRECHO'
   | 'CREATE_ABASTECIMENTO'
@@ -213,13 +216,18 @@ interface OperacaoPendente {
 ```
 Frota
  ├── Caminhao ──(1:1)── Motorista
- ├── Frete
+ ├── Frete              ← CREATED by driver via mobile (origem, destino, tipoCarga, kmInicial)
  │    ├── TrechoKm[]        ← NEW (mobile writes, web reads)
  │    ├── Abastecimento[]   ← NEW (mobile writes, web reads)
  │    ├── Lancamento[]      (existing — mobile adds entries)
- │    └── Acerto?           (existing — mobile reads only)
+ │    └── Acerto?           (existing — mobile reads only; created by fleet owner on web)
  └── Lancamento[]           (avulso entries, existing)
 ```
+
+> **Division of responsibility**: The driver creates and operates Fretes (trips) from the mobile
+> app. The fleet owner manages Motoristas, Caminhões, and Acertos exclusively from the web
+> dashboard. `valorBruto` is entered by the driver from the **Carta Frete** at departure; if
+> not yet available it defaults to `0` and can be updated by the fleet owner on the web.
 
 ---
 
@@ -228,7 +236,7 @@ Frota
 | Calculation | Formula | When computed |
 |---|---|---|
 | `kmRodado` | `kmFinal − kmInicial` | On leg closure |
-| `mediaDiesel` | `kmRodado / litrosDiesel` | On trip close, only if diesel refuel exists in leg |
+| `mediaDiesel` | `kmRodado / litrosDiesel` | On trip close, only for legs where a diesel Abastecimento has trechoId = trecho.id |
 | `kmTotalVazio` | `Σ kmRodado where tipo = 'vazio'` | On trip summary |
 | `kmTotalCarregado` | `Σ kmRodado where tipo = 'carregado'` | On trip summary |
 | `kmTotalViagem` | `kmTotalVazio + kmTotalCarregado` | On trip summary |

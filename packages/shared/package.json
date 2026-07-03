@@ -1,0 +1,11 @@
+{
+  "name": "@fretagro/types",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Shared TypeScript types for FreteAgro monorepo",
+  "main": "./types/index.ts",
+  "types": "./types/index.ts",
+  "exports": {
+    ".": "./types/index.ts"
+  }
+}

@@ -154,3 +154,84 @@ CREATE POLICY "acertos_motorista_select"
   USING (
     "motoristaId"::text = (auth.jwt() ->> 'motorista_id')
   );
+
+-- ──────────────────────────────────────────────────────────────────────────────
+-- trechos_km
+-- Written exclusively by fretagro-mobile via offline sync queue.
+-- Fleet owner: full access. Driver: select/insert/update own trip legs.
+-- ──────────────────────────────────────────────────────────────────────────────
+ALTER TABLE trechos_km ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "trechos_km_fleet_all"          ON trechos_km;
+DROP POLICY IF EXISTS "trechos_km_motorista_select"   ON trechos_km;
+DROP POLICY IF EXISTS "trechos_km_motorista_insert"   ON trechos_km;
+DROP POLICY IF EXISTS "trechos_km_motorista_update"   ON trechos_km;
+
+CREATE POLICY "trechos_km_fleet_all"
+  ON trechos_km FOR ALL
+  USING ("frotaId" = current_frota_id());
+
+CREATE POLICY "trechos_km_motorista_select"
+  ON trechos_km FOR SELECT
+  USING (
+    "freteId" IN (
+      SELECT f.id FROM fretes f
+      JOIN caminhoes c ON c.id = f."caminhaoId"
+      WHERE c."motoristaId"::text = (auth.jwt() ->> 'motorista_id')
+    )
+  );
+
+CREATE POLICY "trechos_km_motorista_insert"
+  ON trechos_km FOR INSERT
+  WITH CHECK (
+    "freteId" IN (
+      SELECT f.id FROM fretes f
+      JOIN caminhoes c ON c.id = f."caminhaoId"
+      WHERE c."motoristaId"::text = (auth.jwt() ->> 'motorista_id')
+    )
+  );
+
+CREATE POLICY "trechos_km_motorista_update"
+  ON trechos_km FOR UPDATE
+  USING (
+    "freteId" IN (
+      SELECT f.id FROM fretes f
+      JOIN caminhoes c ON c.id = f."caminhaoId"
+      WHERE c."motoristaId"::text = (auth.jwt() ->> 'motorista_id')
+    )
+  );
+
+-- ──────────────────────────────────────────────────────────────────────────────
+-- abastecimentos
+-- Written exclusively by fretagro-mobile via offline sync queue.
+-- Fleet owner: full access. Driver: select/insert own refuels.
+-- ──────────────────────────────────────────────────────────────────────────────
+ALTER TABLE abastecimentos ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "abastecimentos_fleet_all"        ON abastecimentos;
+DROP POLICY IF EXISTS "abastecimentos_motorista_select" ON abastecimentos;
+DROP POLICY IF EXISTS "abastecimentos_motorista_insert" ON abastecimentos;
+
+CREATE POLICY "abastecimentos_fleet_all"
+  ON abastecimentos FOR ALL
+  USING ("frotaId" = current_frota_id());
+
+CREATE POLICY "abastecimentos_motorista_select"
+  ON abastecimentos FOR SELECT
+  USING (
+    "freteId" IN (
+      SELECT f.id FROM fretes f
+      JOIN caminhoes c ON c.id = f."caminhaoId"
+      WHERE c."motoristaId"::text = (auth.jwt() ->> 'motorista_id')
+    )
+  );
+
+CREATE POLICY "abastecimentos_motorista_insert"
+  ON abastecimentos FOR INSERT
+  WITH CHECK (
+    "freteId" IN (
+      SELECT f.id FROM fretes f
+      JOIN caminhoes c ON c.id = f."caminhaoId"
+      WHERE c."motoristaId"::text = (auth.jwt() ->> 'motorista_id')
+    )
+  );

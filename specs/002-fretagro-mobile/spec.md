@@ -42,12 +42,14 @@ app the driver is already logged in without entering credentials again.
 
 ### User Story 2 — Register a Complete Trip: Start → Advance Legs → Close (Priority: P2)
 
-The driver starts a trip by entering origin, destination, and cargo type. The truck is filled
-automatically from the driver's registration. The driver registers the km at each waypoint
-(departure, arrival at loading point, arrival at unloading point, return to base) to create
-and close each leg of the trip. The system calculates km per leg automatically. Before closing
-the trip the driver sees a full summary (km vazio, km carregado, totals) and confirms. Once
-closed, the trip and its legs cannot be modified.
+The driver starts a trip by entering origin, destination, cargo type, initial km, and the
+freight value from the **Carta Frete** (the freight letter the driver receives at load pickup,
+which contains weight, price per ton, and total freight value). The truck is filled automatically
+from the driver's registration. The driver registers the km at each waypoint (departure, arrival
+at loading point, arrival at unloading point, return to base) to create and close each leg of the
+trip. The system calculates km per leg automatically. Before closing the trip the driver sees a
+full summary (km vazio, km carregado, totals) and confirms. Once closed, the trip and its legs
+cannot be modified.
 
 **Why this priority**: This is the core workflow that replaces pen-and-paper. Every other feature
 (expenses, sync, history) only adds value on top of a working trip registration flow.
@@ -267,7 +269,8 @@ commission rate matching what the fleet owner registered.
 
 #### Trip Management
 
-- **FR-008**: When starting a trip the driver MUST provide origin, destination, and cargo type; the truck is filled automatically from the driver's profile.
+- **FR-008**: The driver MUST be able to create a new trip directly from the mobile app by providing origin, destination, cargo type, initial km, and the freight value (`valorBruto` in centavos) from the Carta Frete received at load pickup. The truck is filled automatically from the driver's profile. The fleet owner does NOT need to pre-create the trip on the web for the driver to start it.
+- **FR-008a**: `valorBruto` is optional at trip creation — if the driver does not yet have the Carta Frete, it may be left blank (defaults to 0) and updated later by the fleet owner on the web dashboard.
 - **FR-009**: A driver with no linked truck MUST be blocked from starting a trip.
 - **FR-010**: Only one trip can be active per driver at a time; starting a new trip while one is active MUST be blocked.
 - **FR-011**: A trip is composed of one or more `TrechoKm` records; each trecho MUST carry `tipo` (vazio or carregado), `km_inicial`, and `km_final`.
@@ -280,7 +283,7 @@ commission rate matching what the fleet owner registered.
 
 #### Expenses — Refuel
 
-- **FR-018**: A refuel expense MUST capture litros, preco_por_litro, posto name, km at refuel point, and an optional photo.
+- **FR-018**: A refuel expense MUST capture litros, preco_por_litro, and an optional receipt photo. Posto name (local) and km at the refuel point (kmAtual) are optional — drivers often record refuels after the fact and may not have this information available.
 - **FR-019**: The system MUST calculate refuel value as `litros × preco_por_litro`; manual entry of a total value is forbidden.
 - **FR-020**: Diesel and Arla refuels MUST be stored as separate records under the combustivel category.
 - **FR-021**: A refuel with litros ≤ 0 or preco_por_litro ≤ 0 MUST be rejected with a validation error.
@@ -324,11 +327,12 @@ commission rate matching what the fleet owner registered.
 
 - **Motorista (Driver)**: The authenticated user of the mobile app. Has name, WhatsApp, email, commission percentage, and one linked truck. Created by the fleet owner; self-registration not permitted.
 - **Caminhao (Truck)**: The vehicle assigned to the driver (1:1 relationship). Has plate and model. Automatically associated to any trip started by the driver.
-- **Viagem (Trip)**: A complete trip from departure to return. Has origin, destination, cargo type, status (em andamento / encerrada), date, and calculated km totals (vazio and carregado). Belongs to one driver and one truck. Immutable once encerrada.
+- **Viagem (Trip)**: A complete trip from departure to return. **Created by the driver via the mobile app** — the driver provides origin, destination, cargo type, initial km, and the freight value from the Carta Frete; the truck is pre-filled from their profile. Has origin, destination, cargo type, status (em andamento / encerrada), date, freight value (`valorBruto`), and calculated km totals (vazio and carregado). `valorBruto` may be 0 if the Carta Frete was not yet available at departure and can be updated later by the fleet owner on the web. Belongs to one driver and one truck. Immutable once encerrada.
 - **TrechoKm (Trip Leg)**: A segment of the trip with `tipo` (vazio or carregado), `km_inicial`, `km_final`, calculated `km_rodado`, and optional `media_consumo`. Belongs to one viagem. Immutable once `km_final` is set.
 - **Despesa (Expense)**: A cost incurred during a trip. Has category (combustivel, borracharia, pátio, pedágio), subcategory (for combustivel: diesel or arla), value, optional description, and optional receipt photo. Belongs to one viagem.
-- **Abastecimento (Refuel — subtype of Despesa)**: Carries litros, preco_por_litro, calculated valor, posto name, and km at time of refuel. Value is always computed, never entered manually.
-- **Acerto (Settlement)**: The financial settlement for the driver. Has commission value, list of deductions, net payable, status (pendente / realizado), and settlement date. Created and managed by the fleet owner; read-only for the driver.
+- **Abastecimento (Refuel — subtype of Despesa)**: Carries litros, preco_por_litro, calculated valor, optional posto name (local), and optional km at time of refuel (kmAtual). Also carries an optional trechoId linking to the leg during which the refuel occurred, enabling media_consumo calculation (FR-013). Value is always computed, never entered manually.
+- **Acerto (Settlement)**: The financial settlement for the driver. Has commission value, list of deductions, net payable, status (pendente / realizado), and settlement date. **Created and managed exclusively by the fleet owner on the web dashboard; read-only for the driver in the mobile app.**
+- **Motorista / Caminhão management**: Creating, editing, or deleting driver and truck records is performed exclusively by the fleet owner on the web dashboard. The driver cannot self-register or manage fleet entities.
 - **SyncQueue**: The local record of driver actions that have not yet been synchronized with the server. Each entry has a timestamp used for last-write-wins conflict resolution.
 
 ---

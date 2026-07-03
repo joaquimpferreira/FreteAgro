@@ -6,7 +6,7 @@
 
 ## Summary
 
-Build `fretagro-mobile`, a React Native / Expo driver app inside the `frete-agro` monorepo. Drivers can activate their account via invite link, register trips with leg-by-leg km tracking, log expenses and fuel refuels (offline-first via MMKV), view their acerto balance (read-only), and have all data automatically synced to the existing Supabase backend when connectivity is restored. The web dashboard (`fretagro-web`) gains two new Prisma models — `TrechoKm` and `Abastecimento` — that are written exclusively by the mobile app.
+Build `fretagro-mobile`, a React Native / Expo driver app inside the `frete-agro` monorepo. Drivers can activate their account via invite link, **create trips directly from the app** (origin, destination, cargo type, initial km — no web pre-creation required), register legs with km tracking, log expenses and fuel refuels (offline-first via MMKV), view their acerto balance (read-only), and have all data automatically synced to the existing Supabase backend when connectivity is restored. The web dashboard (`fretagro-web`) gains two new Prisma models — `TrechoKm` and `Abastecimento` — written exclusively by the mobile app. Fleet management (motoristas, caminhões, acertos) remains exclusive to the web dashboard.
 
 ## Technical Context
 

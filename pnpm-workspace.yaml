@@ -1,0 +1,4 @@
+packages:
+  - 'fretagro-web'
+  - 'packages/*'
+  - 'fretagro-mobile'

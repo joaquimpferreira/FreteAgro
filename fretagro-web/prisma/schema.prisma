@@ -54,6 +54,8 @@ model Frota {
   motoristas Motorista[]
   fretes     Frete[]
   lancamentos Lancamento[]
+  trechos      TrechoKm[]
+  abastecimentos Abastecimento[]
 
   @@map("frotas")
 }
@@ -151,9 +153,14 @@ model Frete {
   caminhaoId String
   caminhao   Caminhao @relation(fields: [caminhaoId], references: [id])
 
-  lancamentos Lancamento[]
+  lancamentos  Lancamento[]
+  trechos      TrechoKm[]
+  abastecimentos Abastecimento[]
   // One settlement per freight (data-model §6)
   acerto      Acerto?
+
+  // Denormalized for efficient motorista-scoped queries (T044 history screen)
+  motoristaId String?
 
   @@map("fretes")
 }
@@ -245,4 +252,59 @@ model Acerto {
 enum StatusAcerto {
   pendente
   realizado
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 8. TrechoKm — a single leg of a trip (vazio or carregado)
+//    Written exclusively by fretagro-mobile via the offline sync queue.
+// ─────────────────────────────────────────────────────────────────────────────
+model TrechoKm {
+  id        String    @id @default(cuid())
+  tipo      String    // 'vazio' | 'carregado'
+  kmInicial Int
+  kmFinal   Int?      // null while leg is open
+  kmRodado  Int?      // computed on closure: kmFinal − kmInicial
+  ordem     Int       // 1, 2, 3 … sequential within the trip
+  fechadoEm DateTime? // null while open; immutable once set
+
+  freteId String
+  frete   Frete  @relation(fields: [freteId], references: [id])
+
+  frotaId String
+  frota   Frota  @relation(fields: [frotaId], references: [id])
+
+  abastecimentos Abastecimento[]
+
+  createdAt DateTime @default(now())
+
+  @@map("trechos_km")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 9. Abastecimento — fuel refuel event (diesel or arla)
+//    Written exclusively by fretagro-mobile via the offline sync queue.
+// ─────────────────────────────────────────────────────────────────────────────
+model Abastecimento {
+  id            String   @id @default(cuid())
+  subtipo       String   // 'diesel' | 'arla'
+  litros        Decimal
+  precoPorLitro Decimal
+  valorTotal    Int      // centavos: Math.round(litros × precoPorLitro × 100)
+  local         String?  // posto name (optional)
+  kmAtual       Int?     // km at refuel point (optional)
+  fotoUrl       String?  // private Supabase Storage path (NOT a signed URL)
+
+  // Optional FK to trechos_km — enables mediaDiesel = kmRodado / litros (FR-013)
+  trechoId String?
+  trecho   TrechoKm? @relation(fields: [trechoId], references: [id])
+
+  freteId String
+  frete   Frete  @relation(fields: [freteId], references: [id])
+
+  frotaId String
+  frota   Frota  @relation(fields: [frotaId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@map("abastecimentos")
 }

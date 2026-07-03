@@ -52,9 +52,9 @@ This document lists every screen in the app, its route path, the data it reads, 
 |---|---|
 | **Route** | `/(app)/viagem/iniciar` |
 | **Guard** | No active trip (blocked with message if one exists); driver must have `caminhaoId` |
-| **Input** | origem (string), destino (string), tipoCarga (enum), kmInicial (int), caminhaoId (pre-filled from driver profile) |
-| **Validation** | All required; kmInicial > 0 |
-| **Actions** | `useViagemStore.iniciarViagem(params)` → persists to MMKV → queues `CREATE_TRECHO` |
+| **Input** | origem (string), destino (string), tipoCarga (enum), kmInicial (int), valorBruto (int centavos, optional — from Carta Frete, defaults to 0), caminhaoId (pre-filled from driver profile), motoristaId (from session) |
+| **Validation** | origem, destino, tipoCarga, kmInicial required; kmInicial > 0; valorBruto ≥ 0 |
+| **Actions** | `useViagemStore.iniciarViagem(params)` → persists to MMKV → queues `CREATE_VIAGEM` + `CREATE_TRECHO` |
 | **On success** | Navigate to `/(app)/viagem/em-curso` |
 
 ---
@@ -192,11 +192,18 @@ This document lists every screen in the app, its route path, the data it reads, 
 
 ```typescript
 iniciarViagem(params: {
-  freteId: string
+  freteId: string       // generated on mobile (cuid) — this IS the new Frete record id
+  origem: string
+  destino: string
+  tipoCarga: TipoCarga
   kmInicial: number
-  caminhaoId: string
-  frotaId: string
+  valorBruto: number    // centavos; from Carta Frete; 0 if not yet known
+  caminhaoId: string    // pre-filled from driver profile
+  motoristaId: string   // from auth session
+  frotaId: string       // from auth session
 }): void
+// Creates Frete record locally + opens first vazio TrechoKm;
+// enqueues CREATE_VIAGEM + CREATE_TRECHO
 
 avancarTrecho(kmFinal: number): void
 // Closes current open leg; validates kmFinal > kmInicial
@@ -229,6 +236,7 @@ hidratarFromStorage(): void
 
 | OperacaoTipo | Payload fields | Supabase target |
 |---|---|---|
+| `CREATE_VIAGEM` | `{ id, frotaId, caminhaoId, motoristaId, origem, destino, tipoCarga, kmInicial, valorBruto, dataInicio, status: 'em_andamento', createdAt }` | INSERT `fretes` ON CONFLICT DO NOTHING |
 | `CREATE_TRECHO` | `{ id, freteId, frotaId, tipo, kmInicial, ordem, createdAt }` | INSERT `trechos_km` |
 | `CLOSE_TRECHO` | `{ id, kmFinal, kmRodado, fechadoEm }` | UPDATE `trechos_km` WHERE id |
 | `CREATE_ABASTECIMENTO` | `{ id, freteId, frotaId, subtipo, litros, precoPorLitro, valorTotal, local?, kmAtual?, fotoUrl?, createdAt }` | INSERT `abastecimentos` |
