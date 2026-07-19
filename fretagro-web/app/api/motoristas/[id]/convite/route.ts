@@ -5,7 +5,7 @@
 import { prisma } from '@/lib/db/prisma'
 import { requireFrotaId } from '@/lib/api/tenant'
 import { badRequest, notFound, ok } from '@/lib/api/errors'
-import { sendDriverInvite } from '@/lib/notifications/whatsapp'
+import { sendDriverCredentials } from '@/lib/notifications/whatsapp'
 
 interface RouteContext {
   params: { id: string }
@@ -26,7 +26,7 @@ export async function POST(_req: Request, { params }: RouteContext) {
   }
 
   const appUrl = process.env.NEXTAUTH_URL ?? 'o aplicativo FreteAgro'
-  const result = await sendDriverInvite(motorista.whatsapp, motorista.nome, motorista.email, appUrl)
+  const result = await sendDriverCredentials(motorista.whatsapp, motorista.nome, motorista.email, appUrl)
 
   return ok({ sent: result.success, ...(result.error && { error: result.error }) })
 }

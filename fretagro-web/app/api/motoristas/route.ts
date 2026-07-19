@@ -10,7 +10,7 @@ import { badRequest, created, internalError, ok } from '@/lib/api/errors'
 import { parsePagination, buildPaginatedResponse } from '@/lib/api/pagination'
 import { motoristaCreateSchema } from '@/lib/fleet/schemas'
 import { createAdminSupabaseClient } from '@/lib/db/supabase'
-import { sendDriverInvite } from '@/lib/notifications/whatsapp'
+import { sendDriverCredentials } from '@/lib/notifications/whatsapp'
 import type { Prisma } from '@prisma/client'
 
 // ─── GET /api/motoristas ──────────────────────────────────────────────────────
@@ -109,7 +109,7 @@ export async function POST(req: Request) {
   // 3. Notify the driver via WhatsApp with their login email.
   // Non-blocking — registration succeeds even if the message fails.
   const appUrl = process.env.NEXTAUTH_URL ?? 'o aplicativo FreteAgro'
-  sendDriverInvite(data.whatsapp, data.nome, data.email, appUrl).catch((err) => {
+  sendDriverCredentials(data.whatsapp, data.nome, data.email, appUrl).catch((err) => {
     console.error('[POST /api/motoristas] WhatsApp notification failed:', err)
   })
 

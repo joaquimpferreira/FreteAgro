@@ -47,7 +47,7 @@ O dono cadastra caminhões e motoristas, registra fretes com despesas, calcula o
 | **Acerto financeiro** | Comissão automática, deduções (vales/adiantamentos), saldo líquido, comprovante PDF | `lib/finance/`, `lib/pdf/`, `components/acertos/` |
 | **Caixa da frota** | Extrato de entradas/saídas por categoria, lucro líquido do período | `lib/caixa/`, `components/dashboard/` |
 | **Dashboard & Relatórios** | Indicadores, gráficos de tendência (Recharts), export Excel/PDF | `lib/dashboard/`, `lib/excel/`, `lib/pdf/` |
-| **Notificações** | Convite do motorista por WhatsApp (provider-agnostic) | `lib/notifications/` |
+| **Notificações** | Envio das credenciais de login do motorista por WhatsApp (provider-agnostic) | `lib/notifications/` |
 
 ---
 

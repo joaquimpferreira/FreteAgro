@@ -33,7 +33,7 @@ Este pacote faz parte do monorepo **FreteAgro** (veja o [README raiz](../README.
 
 Funcionalidades principais:
 
-- **Ativação por convite** — o motorista recebe um deep link (`fretagroapp://ativar?token=<JWT>`) e define a senha.
+- **Login com credenciais** — o dono da frota define o e-mail e a senha do motorista no painel web (`fretagro-web`); o motorista entra no app com essas credenciais (Supabase Auth via e-mail/senha).
 - **Viagens criadas no app** — origem, destino, tipo de carga e km inicial, sem necessidade de pré-cadastro na web.
 - **Trechos com km** — legs de ida/volta (vazio/carregado) com cálculo automático de km rodado.
 - **Despesas e abastecimentos offline** — persistidos em MMKV antes de qualquer chamada de rede. Abastecimento calcula `litros × preço_por_litro` automaticamente.
@@ -233,7 +233,7 @@ pnpm build:production  # profile production — bundle release (store)
 fretagro-mobile/
 ├── app/                        # Expo Router (file-based routing)
 │   ├── _layout.tsx             # Root layout (splash, providers, sync bootstrap)
-│   ├── (auth)/                 # Fluxo público: login, ativar (deep link)
+│   ├── (auth)/                 # Fluxo público: login (e-mail + senha)
 │   └── (app)/                  # Fluxo autenticado
 │       ├── index.tsx           # Home
 │       ├── viagem/             # iniciar, em-curso, avançar-trecho, encerrar, resumo
@@ -319,7 +319,7 @@ O `jest-expo` já está configurado no `package.json`, incluindo o `moduleNameMa
 | `adb: command not found` | Android SDK fora do PATH | Configure `ANDROID_HOME` + `platform-tools` (ver Pré-requisitos) |
 | `Included build android/null` | `./gradlew` chamado direto | Compile via `pnpm android` (`expo run:android`) |
 | Build nativo some após rebuild | `expo prebuild --clean` rodou | **Não** rode prebuild; a pasta `android/` é versionada |
-| Deep link de ativação não abre | Scheme não registrado | Teste: `adb shell am start -a android.intent.action.VIEW -d "fretagroapp://ativar?token=<JWT>"` |
+| Motorista não consegue entrar | Credenciais não definidas / erradas | O dono da frota define e-mail + senha no painel web; confira o cadastro do motorista |
 | `Network request failed` no login/sync | Proxy corporativo (SSL interception) re-assinando TLS | Veja o [Apêndice: proxy corporativo](#-apêndice-proxy-corporativo-ssl-interception) |
 | `self-signed certificate in certificate chain` no `pnpm install`/Metro | Proxy corporativo no lado do Node | Defina `NODE_EXTRA_CA_CERTS` (ver apêndice) |
 

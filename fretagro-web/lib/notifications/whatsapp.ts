@@ -1,5 +1,5 @@
 // lib/notifications/whatsapp.ts — provider-agnostic WhatsApp notification module
-// FR-006: drivers receive an activation invite via WhatsApp when the owner registers them.
+// FR-006: drivers receive their login credentials via WhatsApp when the owner registers them.
 // This module wraps the HTTP call to the configured provider (e.g. Twilio, Zapi, etc.).
 // Set WHATSAPP_API_URL and WHATSAPP_API_TOKEN in .env.local (see .env.example).
 
@@ -70,7 +70,7 @@ export async function sendWhatsApp(message: WhatsAppMessage): Promise<WhatsAppRe
  * @param email          - Login e-mail set by the fleet owner
  * @param appName        - App name or URL shown in the message
  */
-export async function sendDriverInvite(
+export async function sendDriverCredentials(
   whatsapp: string,
   nomeMotorista: string,
   email: string,
