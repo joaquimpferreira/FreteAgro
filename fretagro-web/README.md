@@ -1,8 +1,57 @@
-# FreteAgro Web — Plataforma SaaS para Gestão de Frota Agrícola
+<div align="center">
 
-> Painel web para gestão operacional e financeira de frotas de transporte agrícola.
+# 💻 FreteAgro Web — Plataforma SaaS para Gestão de Frota Agrícola
 
-## Tech Stack
+**Painel web para gestão operacional e financeira de frotas de transporte agrícola.**
+
+Frota, fretes, acertos financeiros, caixa e relatórios — tudo em um dashboard dark, multi-tenant e mobile-friendly.
+
+</div>
+
+---
+
+## 📑 Índice
+
+- [Visão geral](#-visão-geral)
+- [Funcionalidades por módulo](#-funcionalidades-por-módulo)
+- [Tech Stack](#-tech-stack)
+- [Pré-requisitos](#-pré-requisitos)
+- [Setup](#-setup)
+- [Variáveis de ambiente](#-variáveis-de-ambiente)
+- [Rodando o app](#-rodando-o-app)
+- [Quality Gates](#-quality-gates)
+- [Estrutura do projeto](#-estrutura-do-projeto)
+- [Princípios de arquitetura](#-princípios-de-arquitetura)
+- [Banco de dados & multi-tenancy](#-banco-de-dados--multi-tenancy)
+- [Design System](#-design-system)
+- [Deploy](#-deploy)
+- [Troubleshooting](#-troubleshooting)
+
+---
+
+## 🎯 Visão geral
+
+O `fretagro-web` é o painel usado pelo **dono da frota**. Faz parte do monorepo FreteAgro (veja o [README raiz](../README.md)) e compartilha o banco Supabase e os tipos (`@fretagro/types`) com o app mobile do motorista.
+
+O dono cadastra caminhões e motoristas, registra fretes com despesas, calcula o **acerto financeiro** com o motorista (comissão − deduções), controla o **caixa** da frota e acompanha indicadores no **dashboard**. Os dados de campo (trechos/km e abastecimentos) chegam automaticamente do app mobile.
+
+---
+
+## 🧩 Funcionalidades por módulo
+
+| Módulo | Descrição | Código |
+|--------|-----------|--------|
+| **Autenticação & Onboarding** | Cadastro do dono, login, recuperação de senha, guia de primeiros passos | `app/(auth)/`, `lib/auth/` |
+| **Gestão de frota** | Caminhões e motoristas; regra **1 caminhão = 1 motorista ativo** | `lib/fleet/`, `components/frota/` |
+| **Fretes** | Registro de viagens, despesas com comprovante, status; soft-delete com histórico | `lib/fretes/`, `components/fretes/` |
+| **Acerto financeiro** | Comissão automática, deduções (vales/adiantamentos), saldo líquido, comprovante PDF | `lib/finance/`, `lib/pdf/`, `components/acertos/` |
+| **Caixa da frota** | Extrato de entradas/saídas por categoria, lucro líquido do período | `lib/caixa/`, `components/dashboard/` |
+| **Dashboard & Relatórios** | Indicadores, gráficos de tendência (Recharts), export Excel/PDF | `lib/dashboard/`, `lib/excel/`, `lib/pdf/` |
+| **Notificações** | Convite do motorista por WhatsApp (provider-agnostic) | `lib/notifications/` |
+
+---
+
+## 🗺️ Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
@@ -16,112 +65,186 @@
 | Testing | Vitest (unit) + Playwright (E2E + 375px mobile) |
 | Deploy | Vercel |
 
-## Prerequisites
+---
 
-- Node.js 20 LTS
-- pnpm (`npm install -g pnpm`)
-- A [Supabase](https://supabase.com) project (PostgreSQL + Auth + Storage)
+## ✅ Pré-requisitos
 
-## Setup
+- **Node.js** 20 LTS
+- **pnpm** ≥ 9 (`npm install -g pnpm` ou `corepack enable`)
+- Um projeto **[Supabase](https://supabase.com)** (PostgreSQL + Auth + Storage)
+- `psql` (opcional, para aplicar as políticas de RLS via terminal)
+
+---
+
+## ⚙️ Setup
+
+> Instale a partir da **raiz do monorepo** para resolver o link `workspace:*` do `@fretagro/types`.
 
 ```bash
-# 1. Clone and install dependencies
+# 1. Clonar e instalar dependências (na raiz do monorepo)
 pnpm install
 
-# 2. Copy environment variables
+# 2. Copiar as variáveis de ambiente
+cd fretagro-web
 cp .env.example .env.local
-# Edit .env.local and fill in all values (see comments in the file)
+# Edite .env.local e preencha todos os valores (veja os comentários no arquivo)
 
-# 3. Generate Prisma client + run migrations
+# 3. Gerar o Prisma client + rodar as migrations
 pnpm prisma generate
 pnpm prisma migrate dev
 
-# 4. Apply Row-Level Security policies (required for multi-tenant isolation)
+# 4. Aplicar as políticas de Row-Level Security (isolamento multi-tenant)
 pnpm prisma db execute --file prisma/rls-policies.sql
 
-# 5. Start the development server
+# 5. Subir o servidor de desenvolvimento
 pnpm dev   # http://localhost:3000
 ```
 
-## Environment Variables
+---
 
-Copy `.env.example` to `.env.local` and fill in the values. All required variables are documented with placeholders in `.env.example`.
+## 🔐 Variáveis de ambiente
 
-| Variable | Scope | Description |
-|----------|-------|-------------|
-| `DATABASE_URL` | server | Supabase Postgres via PgBouncer (port 6543) |
-| `DIRECT_URL` | server | Direct Postgres connection for `prisma migrate` |
-| `NEXT_PUBLIC_SUPABASE_URL` | browser + server | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | browser + server | Supabase anon key (safe to expose) |
-| `SUPABASE_SERVICE_ROLE_KEY` | **server only** | Service role key — never expose to the client |
-| `NEXTAUTH_SECRET` | server | JWT signing secret (`openssl rand -base64 32`) |
-| `NEXTAUTH_URL` | server | Canonical app URL (e.g. `http://localhost:3000`) |
-| `WHATSAPP_API_URL` | server | WhatsApp provider endpoint (see `lib/notifications/whatsapp.ts`) |
-| `WHATSAPP_API_TOKEN` | server | WhatsApp provider auth token |
+Copie `.env.example` para `.env.local` e preencha os valores. Todas as variáveis obrigatórias estão documentadas com placeholders no `.env.example`.
 
-> **Security**: `SUPABASE_SERVICE_ROLE_KEY` and `NEXTAUTH_SECRET` are server-only. Never use them in Client Components or expose them to the browser.
+| Variável | Escopo | Descrição |
+|----------|--------|-----------|
+| `DATABASE_URL` | server | Supabase Postgres via PgBouncer (porta 6543) |
+| `DIRECT_URL` | server | Conexão direta ao Postgres para `prisma migrate` (porta 5432) |
+| `NEXT_PUBLIC_SUPABASE_URL` | browser + server | URL do projeto Supabase |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | browser + server | Anon key do Supabase (pode expor) |
+| `SUPABASE_SERVICE_ROLE_KEY` | **server only** | Service role key — nunca expor ao cliente |
+| `NEXTAUTH_SECRET` | server | Segredo de assinatura JWT (`openssl rand -base64 32`) |
+| `NEXTAUTH_URL` | server | URL canônica do app (ex.: `http://localhost:3000`) |
+| `WHATSAPP_API_URL` | server | Endpoint do provedor WhatsApp (ver `lib/notifications/whatsapp.ts`) |
+| `WHATSAPP_API_TOKEN` | server | Token de auth do provedor WhatsApp |
 
-## Quality Gates
+> **Segurança**: `SUPABASE_SERVICE_ROLE_KEY` e `NEXTAUTH_SECRET` são server-only. Nunca use em Client Components nem exponha ao browser.
 
-All gates must pass before merging to `main`:
+---
+
+## ▶️ Rodando o app
 
 ```bash
-pnpm tsc --noEmit   # Gate 1: zero TypeScript errors (strict mode)
-pnpm lint           # Gate 2: no ESLint errors
-pnpm test           # Gate 3: Vitest unit tests (lib/finance, lib/utils)
-pnpm test:e2e       # Gate 5: Playwright E2E incl. 375px mobile snapshot
+pnpm dev              # servidor de desenvolvimento (http://localhost:3000)
+pnpm build            # build de produção
+pnpm start            # servir o build de produção
+pnpm prisma:studio    # abrir o Prisma Studio (inspecionar o banco)
 ```
 
-## Project Structure
+---
+
+## 🧪 Quality Gates
+
+Todos os gates devem passar antes de mergear na `main`:
+
+```bash
+pnpm tsc --noEmit   # Gate 1: zero erros de TypeScript (strict mode)
+pnpm lint           # Gate 2: nenhum erro de ESLint
+pnpm test           # Gate 3: Vitest unit tests (lib/finance, lib/utils)
+pnpm test:e2e       # Gate 5: Playwright E2E incl. snapshot mobile 375px
+```
+
+---
+
+## 📁 Estrutura do projeto
 
 ```
 fretagro-web/
-├── app/                   # Next.js App Router pages and API routes
-│   ├── (auth)/            # Public auth pages (login, cadastro, recuperar-senha)
-│   ├── (dashboard)/       # Protected dashboard pages
+├── app/                   # Next.js App Router: páginas e API routes
+│   ├── (auth)/            # Páginas públicas (login, cadastro, recuperar-senha)
+│   ├── (dashboard)/       # Páginas protegidas do dashboard
 │   └── api/               # REST API route handlers
-├── components/            # React components (UI primitives, feature modules)
+├── components/            # Componentes React (UI primitives + módulos de feature)
 ├── hooks/                 # React hooks (data fetching, state)
-├── lib/                   # Business logic and utilities
-│   ├── api/               # API helpers (errors, pagination, tenant guard, validate)
-│   ├── auth/              # Next-Auth config, Zod schemas
-│   ├── caixa/             # Cash flow logic
-│   ├── db/                # Prisma singleton + Supabase clients
-│   ├── finance/           # Financial calculations (centavos, acerto formula)
-│   ├── fleet/             # Fleet/truck/driver business rules
-│   ├── fretes/            # Freight schemas and logic
-│   ├── notifications/     # WhatsApp notification module
-│   ├── pdf/               # PDF receipt generation
-│   ├── storage/           # Supabase Storage helpers
-│   └── utils/             # Shared utilities (masks, validators, chartColors)
+├── lib/                   # Lógica de negócio e utilidades
+│   ├── api/               # Helpers de API (errors, pagination, tenant guard, validate)
+│   ├── auth/              # Config Next-Auth, schemas Zod
+│   ├── caixa/             # Lógica de fluxo de caixa
+│   ├── db/                # Singleton Prisma + clients Supabase
+│   ├── finance/           # Cálculos financeiros (centavos, fórmula de acerto)
+│   ├── fleet/             # Regras de frota/caminhão/motorista
+│   ├── fretes/            # Schemas e lógica de fretes
+│   ├── notifications/     # Módulo de notificação WhatsApp
+│   ├── pdf/               # Geração de comprovantes em PDF
+│   ├── storage/           # Helpers do Supabase Storage
+│   └── utils/             # Utilidades (masks, validators, chartColors)
 ├── prisma/
-│   ├── schema.prisma      # Database schema (7 models)
-│   ├── migrations/        # Prisma migration history
-│   └── rls-policies.sql   # Supabase Row-Level Security policies
-├── types/                 # Shared TypeScript types and domain enums
-└── e2e/                   # Playwright E2E tests
+│   ├── schema.prisma      # Schema do banco
+│   ├── migrations/        # Histórico de migrations
+│   └── rls-policies.sql   # Políticas de Row-Level Security
+├── types/                 # Tipos TS compartilhados e enums de domínio
+└── e2e/                   # Testes E2E Playwright
 ```
 
-## Architecture Principles
+---
 
-1. **Layer discipline** — `types/` → `lib/` → `hooks/` → `components/` → `app/` (one-directional)
-2. **Server Components default** — `"use client"` requires a justification comment
-3. **Design tokens** — No hardcoded hex outside `tailwind.config.ts`, `design-system/tokens.ts`, and `lib/utils/chartColors.ts`
-4. **Integer centavos** — All monetary values stored as `Int` (centavos); conversion to reais only in `lib/finance/formatMoeda.ts`
-5. **1 truck = 1 active driver** — Enforced at DB (`Caminhao.motoristaId @unique`) and lib layer
-6. **Multi-tenant isolation** — Supabase RLS policies + `lib/api/tenant.ts` guard; all resources scoped by `frotaId`
-7. **Server-side pagination** — Lists > 50 rows use `parsePagination` / `buildPaginatedResponse` from `lib/api/pagination.ts` (cap: 50)
+## 🏛 Princípios de arquitetura
 
-## Design System
+1. **Disciplina de camadas** — `types/` → `lib/` → `hooks/` → `components/` → `app/` (unidirecional)
+2. **Server Components por padrão** — `"use client"` exige comentário justificando
+3. **Design tokens** — sem hex hardcoded fora de `tailwind.config.ts`, `design-system/tokens.ts` e `lib/utils/chartColors.ts`
+4. **Centavos inteiros** — todo valor monetário é `Int` (centavos); conversão para reais só em `lib/finance/formatMoeda.ts`
+5. **1 caminhão = 1 motorista ativo** — no DB (`Caminhao.motoristaId @unique`) e na camada lib
+6. **Isolamento multi-tenant** — RLS do Supabase + guard `lib/api/tenant.ts`; recursos escopados por `frotaId`
+7. **Paginação server-side** — listas > 50 linhas usam `parsePagination` / `buildPaginatedResponse` de `lib/api/pagination.ts` (cap: 50)
 
-See [`../design-system/DESIGN_SYSTEM.md`](../design-system/DESIGN_SYSTEM.md) for the full design system reference (color tokens, typography, spacing, components, dark theme).
+---
 
-Token files:
+## 🗄 Banco de dados & multi-tenancy
+
+- **Prisma** é a fonte de verdade do schema (`prisma/schema.prisma`); migrations em `prisma/migrations/`.
+- Os modelos `TrechoKm` e `Abastecimento` são **escritos exclusivamente pelo app mobile** e apenas lidos aqui.
+- **Row-Level Security** (`prisma/rls-policies.sql`) garante que uma frota nunca veja dados de outra — reaplique após criar novas tabelas.
+- Use `DIRECT_URL` (porta 5432) para `prisma migrate` e `DATABASE_URL` (PgBouncer, 6543) em runtime.
+
+---
+
+## 🎨 Design System
+
+Veja [`../design-system/DESIGN_SYSTEM.md`](../design-system/DESIGN_SYSTEM.md) para a referência completa (tokens de cor, tipografia, espaçamento, componentes, tema dark).
+
+Arquivos de tokens:
 - **CSS variables**: `design-system/tokens.css`
 - **TypeScript**: `design-system/tokens.ts`
-- **Tailwind theme**: `fretagro-web/tailwind.config.ts`
-- **Chart colors**: `fretagro-web/lib/utils/chartColors.ts` (Recharts SVG token file)
+- **Tema Tailwind**: `fretagro-web/tailwind.config.ts`
+- **Cores de gráfico**: `fretagro-web/lib/utils/chartColors.ts` (tokens SVG do Recharts)
 
-## Validation Scenarios
+Setup do Shadcn/UI documentado em [`SHADCN_SETUP.md`](SHADCN_SETUP.md).
 
-See [`../specs/001-frete-agro-saas/quickstart.md`](../specs/001-frete-agro-saas/quickstart.md) for end-to-end validation scenarios V1–V7 covering all user stories.
+---
+
+## 🚢 Deploy
+
+O deploy alvo é a **Vercel**:
+
+1. Conecte o repositório e defina o **root directory** como `fretagro-web`.
+2. Configure todas as variáveis de ambiente (seção acima) no painel da Vercel.
+3. Build command: `pnpm build` · Install command: `pnpm install` (na raiz do workspace).
+4. Garanta que as migrations e as políticas de RLS já foram aplicadas no Supabase de produção.
+
+---
+
+## 🩺 Troubleshooting
+
+| Sintoma | Causa provável | Solução |
+|---------|----------------|---------|
+| `@fretagro/types` não resolve | `pnpm install` rodado só na pasta web | Rode `pnpm install` na **raiz** do monorepo |
+| `prisma migrate` falha na conexão | Usando a URL com PgBouncer | Use a `DIRECT_URL` (porta 5432) para migrations |
+| Dados de outra frota aparecem | RLS não aplicada em tabela nova | Reaplique `prisma/rls-policies.sql` |
+| `NEXTAUTH_SECRET` ausente em produção | Env não configurada | Gere com `openssl rand -base64 32` e configure na Vercel |
+| Snapshot E2E mobile falha | Mudança visual em 375px | Revise o layout e atualize o snapshot do Playwright |
+
+---
+
+## 📐 Cenários de validação
+
+Veja [`../specs/001-frete-agro-saas/quickstart.md`](../specs/001-frete-agro-saas/quickstart.md) para os cenários end-to-end V1–V7 cobrindo todas as user stories.
+
+---
+
+## 🔗 Referências
+
+- [README raiz do monorepo](../README.md)
+- [App mobile do motorista](../fretagro-mobile/README.md)
+- [Especificação da plataforma](../specs/001-frete-agro-saas/spec.md) · [Quickstart](../specs/001-frete-agro-saas/quickstart.md)
+- [Design System](../design-system/DESIGN_SYSTEM.md)

@@ -4,9 +4,9 @@
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
-    "start": "NODE_EXTRA_CA_CERTS=./certs/netskope-ca.pem expo start",
-    "android": "NODE_EXTRA_CA_CERTS=./certs/netskope-ca.pem expo run:android",
-    "ios": "NODE_EXTRA_CA_CERTS=./certs/netskope-ca.pem expo run:ios",
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "build:dev": "eas build --profile development --platform android",
     "build:preview": "eas build --profile preview --platform android",
     "build:production": "eas build --profile production --platform android",
