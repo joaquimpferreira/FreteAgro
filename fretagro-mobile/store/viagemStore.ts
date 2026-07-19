@@ -10,8 +10,7 @@ import { saveViagem, loadViagem } from '../lib/storage/viagemStorage'
 import { enqueue } from '../lib/storage/queueStorage'
 import type { OperacaoTipo } from '../lib/storage/queueStorage'
 import { fecharTrecho } from '../lib/viagem/calcularTrecho'
-
-const createId = () => crypto.randomUUID()
+import { createId } from '../lib/utils/createId'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helper — enqueue an operation with a fresh timestamp
@@ -63,6 +62,12 @@ export interface RegistrarDespesaParams {
 interface ViagemStore {
   viagem: ViagemAtiva | null
 
+  /**
+   * Snapshot of the last completed trip — kept only while the resumo screen is
+   * showing. Cleared by limparViagemEncerrada() when the user navigates away.
+   */
+  viagemEncerrada: ViagemAtiva | null
+
   /** Hydrates from MMKV. Call on app mount (T017) and after signOut. */
   hidratarFromStorage: (override?: ViagemAtiva | null) => void
 
@@ -75,8 +80,11 @@ interface ViagemStore {
   /** Opens a new leg (called after avancarTrecho closes the previous one). */
   abrirNovoTrecho: (tipo: TrechoKm['tipo'], kmInicial: number, freteId: string, frotaId: string) => void
 
-  /** Closes the last leg and the trip; sets pendenteSincronizacao = true. */
+  /** Closes the last leg and the trip. Clears viagem (active trip) and stores snapshot in viagemEncerrada. */
   encerrarViagem: (kmFinal: number) => void
+
+  /** Clears the completed trip snapshot. Call when leaving the resumo screen. */
+  limparViagemEncerrada: () => void
 
   /**
    * Records a fuel refuel.
@@ -96,6 +104,7 @@ interface ViagemStore {
 // ─────────────────────────────────────────────────────────────────────────────
 export const useViagemStore = create<ViagemStore>((set, get) => ({
   viagem: null,
+  viagemEncerrada: null,
 
   hidratarFromStorage: (override) => {
     const viagem = override !== undefined ? override : loadViagem()
@@ -119,6 +128,8 @@ export const useViagemStore = create<ViagemStore>((set, get) => ({
 
     const viagem: ViagemAtiva = {
       freteId,
+      origem: params.origem,
+      destino: params.destino,
       trechos: [primeiroTrecho],
       trechoAtualIndex: 0,
       despesas: [],
@@ -257,14 +268,17 @@ export const useViagemStore = create<ViagemStore>((set, get) => ({
     const trechos = [...viagem.trechos]
     trechos[viagem.trechoAtualIndex] = trechoFechado
 
-    const updated: ViagemAtiva = {
+    // Build the completed trip snapshot (used by resumo screen)
+    const snapshot: ViagemAtiva = {
       ...viagem,
       trechos,
       pendenteSincronizacao: true,
     }
 
-    set({ viagem: updated })
-    saveViagem(updated)
+    // Clear the active trip so home/em-curso screens stop showing "viagem em andamento".
+    // Keep the snapshot in viagemEncerrada for the resumo screen to display.
+    set({ viagem: null, viagemEncerrada: snapshot })
+    saveViagem(null)
 
     enqueueOp('CLOSE_TRECHO', {
       id: trechoAtual.id,
@@ -278,6 +292,10 @@ export const useViagemStore = create<ViagemStore>((set, get) => ({
       status: 'concluido',
       dataFim: new Date().toISOString(),
     })
+  },
+
+  limparViagemEncerrada: () => {
+    set({ viagemEncerrada: null })
   },
 
   registrarAbastecimento: (params) => {

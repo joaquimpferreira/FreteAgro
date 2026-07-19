@@ -4,6 +4,7 @@
 // This file is the ONLY place that creates the Supabase client instance.
 // All other code must import helpers from lib/auth/mobileAuth.ts — never this file directly.
 
+import 'react-native-url-polyfill/auto'
 import { createClient } from '@supabase/supabase-js'
 import * as SecureStore from 'expo-secure-store'
 

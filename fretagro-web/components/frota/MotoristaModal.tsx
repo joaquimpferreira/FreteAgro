@@ -6,6 +6,7 @@
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
 import {
   Dialog,
   DialogContent,
@@ -23,8 +24,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { motoristaCreateSchema, type MotoristaCreateInput } from '@/lib/fleet/schemas'
+import { motoristaCreateSchema, motoristaUpdateSchema, type MotoristaCreateInput } from '@/lib/fleet/schemas'
 import type { Motorista } from '@/types/frota'
+
+// Edit schema: senha is optional — empty string treated as "no change"
+const editSchema = motoristaUpdateSchema.extend({
+  senha: z.preprocess(
+    (val) => (val === '' ? undefined : val),
+    z.string().min(8, 'A senha deve ter pelo menos 8 caracteres.').optional(),
+  ),
+})
+
+type CreateFormValues = z.infer<typeof motoristaCreateSchema>
+type EditFormValues   = z.infer<typeof editSchema>
+type FormValues = CreateFormValues | EditFormValues
 
 interface MotoristaModalProps {
   open: boolean
@@ -36,6 +49,7 @@ interface MotoristaModalProps {
 
 export function MotoristaModal({ open, onOpenChange, motorista, onSubmit, isLoading }: MotoristaModalProps) {
   const isEditing = !!motorista
+  const schema    = isEditing ? editSchema : motoristaCreateSchema
 
   const {
     register,
@@ -44,10 +58,12 @@ export function MotoristaModal({ open, onOpenChange, motorista, onSubmit, isLoad
     watch,
     reset,
     formState: { errors },
-  } = useForm<MotoristaCreateInput>({
-    resolver: zodResolver(motoristaCreateSchema),
+  } = useForm<FormValues>({
+    resolver: zodResolver(schema as Parameters<typeof zodResolver>[0]),
     defaultValues: {
       nome:               motorista?.nome ?? '',
+      email:              motorista?.email ?? '',
+      senha:              '',
       whatsapp:           motorista?.whatsapp ?? '',
       percentualComissao: motorista?.percentualComissao ?? 10,
       tipoContrato:       motorista?.tipoContrato ?? 'autonomo',
@@ -60,6 +76,8 @@ export function MotoristaModal({ open, onOpenChange, motorista, onSubmit, isLoad
     if (open) {
       reset({
         nome:               motorista?.nome ?? '',
+        email:              motorista?.email ?? '',
+        senha:              '',
         whatsapp:           motorista?.whatsapp ?? '',
         percentualComissao: motorista?.percentualComissao ?? 10,
         tipoContrato:       motorista?.tipoContrato ?? 'autonomo',
@@ -71,7 +89,11 @@ export function MotoristaModal({ open, onOpenChange, motorista, onSubmit, isLoad
   const tipoContratoValue = watch('tipoContrato')
 
   const handleFormSubmit = handleSubmit(async (data) => {
-    await onSubmit(data)
+    // On edit, omit senha from the payload if left blank
+    const payload = isEditing && !data.senha
+      ? (({ senha: _s, ...rest }) => rest)(data) as MotoristaCreateInput
+      : data as MotoristaCreateInput
+    await onSubmit(payload)
     onOpenChange(false)
   })
 
@@ -82,8 +104,8 @@ export function MotoristaModal({ open, onOpenChange, motorista, onSubmit, isLoad
           <DialogTitle>{isEditing ? 'Editar Motorista' : 'Novo Motorista'}</DialogTitle>
           <DialogDescription>
             {isEditing
-              ? 'Atualize os dados do motorista.'
-              : 'Preencha os dados para cadastrar um novo motorista. Um convite será enviado via WhatsApp.'}
+              ? 'Atualize os dados do motorista. Deixe a senha em branco para mantê-la.'
+              : 'Defina os dados e credenciais de acesso ao aplicativo. O motorista receberá o e-mail de login via WhatsApp.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -93,6 +115,24 @@ export function MotoristaModal({ open, onOpenChange, motorista, onSubmit, isLoad
             placeholder="Carlos Silva"
             error={errors.nome?.message}
             {...register('nome')}
+          />
+
+          <Input
+            label="E-mail de acesso"
+            placeholder="motorista@email.com"
+            type="email"
+            autoComplete="off"
+            error={errors.email?.message}
+            {...register('email')}
+          />
+
+          <Input
+            label={isEditing ? 'Nova senha (deixe em branco para manter)' : 'Senha de acesso'}
+            placeholder="Mínimo 8 caracteres"
+            type="password"
+            autoComplete="new-password"
+            error={errors.senha?.message}
+            {...register('senha')}
           />
 
           <Input
@@ -123,7 +163,7 @@ export function MotoristaModal({ open, onOpenChange, motorista, onSubmit, isLoad
           <div className="flex flex-col gap-1.5">
             <Select
               value={tipoContratoValue ?? 'autonomo'}
-              onValueChange={(val) => setValue('tipoContrato', val as MotoristaCreateInput['tipoContrato'])}
+              onValueChange={(val) => setValue('tipoContrato' as never, val as never)}
             >
               <SelectTrigger label="Tipo de contrato">
                 <SelectValue placeholder="Selecione" />

@@ -1,14 +1,15 @@
 // app/api/motoristas/[id]/route.ts — Motorista item handlers
 // GET    /api/motoristas/[id] — get one driver
-// PATCH  /api/motoristas/[id] — edit driver details
+// PATCH  /api/motoristas/[id] — edit driver details (and optionally update Supabase credentials)
 // DELETE /api/motoristas/[id] — soft-inactivate (preserves history)
 // FR-012, FR-013 · contracts/motoristas.md
 
 import { prisma } from '@/lib/db/prisma'
 import { requireFrotaId } from '@/lib/api/tenant'
 import { validateBody } from '@/lib/api/validate'
-import { notFound, ok } from '@/lib/api/errors'
+import { badRequest, notFound, ok } from '@/lib/api/errors'
 import { motoristaUpdateSchema } from '@/lib/fleet/schemas'
+import { createAdminSupabaseClient } from '@/lib/db/supabase'
 
 interface RouteContext {
   params: { id: string }
@@ -49,14 +50,34 @@ export async function PATCH(req: Request, { params }: RouteContext) {
   const { data, error } = await validateBody(req, motoristaUpdateSchema)
   if (error) return error
 
+  // If email or password changed, update the Supabase Auth user.
+  if ((data.email !== undefined || data.senha !== undefined) && motorista.supabaseUserId) {
+    const supabase = createAdminSupabaseClient()
+    const authUpdates: { email?: string; password?: string } = {}
+    if (data.email !== undefined) authUpdates.email    = data.email
+    if (data.senha !== undefined) authUpdates.password = data.senha
+
+    const { error: authError } = await supabase.auth.admin.updateUserById(
+      motorista.supabaseUserId,
+      authUpdates,
+    )
+    if (authError) {
+      if (authError.message?.toLowerCase().includes('already registered')) {
+        return badRequest('EMAIL_IN_USE', 'Este e-mail já está em uso por outro usuário.')
+      }
+      return badRequest('AUTH_UPDATE_FAILED', `Erro ao atualizar credenciais: ${authError.message}`)
+    }
+  }
+
   const updated = await prisma.motorista.update({
     where: { id: params.id },
     data: {
-      ...(data.nome               !== undefined && { nome: data.nome }),
-      ...(data.cpf                !== undefined && { cpf: data.cpf }),
-      ...(data.whatsapp           !== undefined && { whatsapp: data.whatsapp }),
+      ...(data.nome               !== undefined && { nome:               data.nome }),
+      ...(data.cpf                !== undefined && { cpf:                data.cpf }),
+      ...(data.email              !== undefined && { email:              data.email }),
+      ...(data.whatsapp           !== undefined && { whatsapp:           data.whatsapp }),
       ...(data.percentualComissao !== undefined && { percentualComissao: data.percentualComissao }),
-      ...(data.tipoContrato       !== undefined && { tipoContrato: data.tipoContrato }),
+      ...(data.tipoContrato       !== undefined && { tipoContrato:       data.tipoContrato }),
     },
     include: {
       caminhao: {

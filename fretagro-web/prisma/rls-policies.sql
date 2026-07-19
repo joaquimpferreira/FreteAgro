@@ -37,7 +37,7 @@ CREATE POLICY "frotas_owner_all"
   USING ("ownerId" = auth.uid()::text);
 
 -- ──────────────────────────────────────────────────────────────────────────────
--- Helper: retorna o frotaId do dono autenticado
+-- Helper: retorna o frotaId do dono autenticado (web/owner path)
 -- ──────────────────────────────────────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION current_frota_id()
   RETURNS text
@@ -48,13 +48,31 @@ AS $$
 $$;
 
 -- ──────────────────────────────────────────────────────────────────────────────
+-- Helper: retorna o id do motorista autenticado (mobile path)
+-- Uses supabaseUserId which is the Supabase Auth UUID stored on the motorista row.
+-- ──────────────────────────────────────────────────────────────────────────────
+CREATE OR REPLACE FUNCTION current_motorista_id()
+  RETURNS text
+  LANGUAGE sql STABLE
+  SECURITY DEFINER
+AS $$
+  SELECT id FROM motoristas WHERE "supabaseUserId" = auth.uid()::text LIMIT 1;
+$$;
+
+-- ──────────────────────────────────────────────────────────────────────────────
 -- caminhoes
 -- ──────────────────────────────────────────────────────────────────────────────
-DROP POLICY IF EXISTS "caminhoes_fleet_all" ON caminhoes;
+DROP POLICY IF EXISTS "caminhoes_fleet_all"        ON caminhoes;
+DROP POLICY IF EXISTS "caminhoes_motorista_select" ON caminhoes;
 
 CREATE POLICY "caminhoes_fleet_all"
   ON caminhoes FOR ALL
   USING ("frotaId" = current_frota_id());
+
+-- Motorista can read their own assigned truck
+CREATE POLICY "caminhoes_motorista_select"
+  ON caminhoes FOR SELECT
+  USING ("motoristaId" = current_motorista_id());
 
 -- ──────────────────────────────────────────────────────────────────────────────
 -- motoristas
@@ -66,14 +84,11 @@ CREATE POLICY "motoristas_fleet_all"
   ON motoristas FOR ALL
   USING ("frotaId" = current_frota_id());
 
+-- Motorista can read their own row (mobile: supabaseUserId = auth.uid())
 CREATE POLICY "motoristas_self_select"
   ON motoristas FOR SELECT
   USING (
-    "frotaId" IN (
-      SELECT f.id FROM frotas f
-      JOIN caminhoes c ON c."frotaId" = f.id AND c."motoristaId" = motoristas.id
-      LIMIT 1
-    )
+    "supabaseUserId" = auth.uid()::text
     OR "frotaId" = current_frota_id()
   );
 
@@ -94,8 +109,7 @@ CREATE POLICY "fretes_motorista_select"
   USING (
     "caminhaoId" IN (
       SELECT c.id FROM caminhoes c
-      JOIN motoristas m ON m.id = c."motoristaId"
-      WHERE m.id::text = (auth.jwt() ->> 'motorista_id')
+      WHERE c."motoristaId" = current_motorista_id()
     )
   );
 
@@ -104,7 +118,7 @@ CREATE POLICY "fretes_motorista_insert"
   WITH CHECK (
     "caminhaoId" IN (
       SELECT c.id FROM caminhoes c
-      WHERE c."motoristaId"::text = (auth.jwt() ->> 'motorista_id')
+      WHERE c."motoristaId" = current_motorista_id()
     )
   );
 
@@ -113,7 +127,7 @@ CREATE POLICY "fretes_motorista_update"
   USING (
     "caminhaoId" IN (
       SELECT c.id FROM caminhoes c
-      WHERE c."motoristaId"::text = (auth.jwt() ->> 'motorista_id')
+      WHERE c."motoristaId" = current_motorista_id()
     )
   );
 
@@ -133,7 +147,7 @@ CREATE POLICY "lancamentos_motorista_insert"
     "freteId" IN (
       SELECT f.id FROM fretes f
       JOIN caminhoes c ON c.id = f."caminhaoId"
-      WHERE c."motoristaId"::text = (auth.jwt() ->> 'motorista_id')
+      WHERE c."motoristaId" = current_motorista_id()
     )
   );
 
@@ -152,7 +166,7 @@ CREATE POLICY "acertos_fleet_all"
 CREATE POLICY "acertos_motorista_select"
   ON acertos FOR SELECT
   USING (
-    "motoristaId"::text = (auth.jwt() ->> 'motorista_id')
+    "motoristaId" = current_motorista_id()
   );
 
 -- ──────────────────────────────────────────────────────────────────────────────
@@ -177,7 +191,7 @@ CREATE POLICY "trechos_km_motorista_select"
     "freteId" IN (
       SELECT f.id FROM fretes f
       JOIN caminhoes c ON c.id = f."caminhaoId"
-      WHERE c."motoristaId"::text = (auth.jwt() ->> 'motorista_id')
+      WHERE c."motoristaId" = current_motorista_id()
     )
   );
 
@@ -187,7 +201,7 @@ CREATE POLICY "trechos_km_motorista_insert"
     "freteId" IN (
       SELECT f.id FROM fretes f
       JOIN caminhoes c ON c.id = f."caminhaoId"
-      WHERE c."motoristaId"::text = (auth.jwt() ->> 'motorista_id')
+      WHERE c."motoristaId" = current_motorista_id()
     )
   );
 
@@ -197,7 +211,7 @@ CREATE POLICY "trechos_km_motorista_update"
     "freteId" IN (
       SELECT f.id FROM fretes f
       JOIN caminhoes c ON c.id = f."caminhaoId"
-      WHERE c."motoristaId"::text = (auth.jwt() ->> 'motorista_id')
+      WHERE c."motoristaId" = current_motorista_id()
     )
   );
 
@@ -222,7 +236,7 @@ CREATE POLICY "abastecimentos_motorista_select"
     "freteId" IN (
       SELECT f.id FROM fretes f
       JOIN caminhoes c ON c.id = f."caminhaoId"
-      WHERE c."motoristaId"::text = (auth.jwt() ->> 'motorista_id')
+      WHERE c."motoristaId" = current_motorista_id()
     )
   );
 
@@ -232,6 +246,6 @@ CREATE POLICY "abastecimentos_motorista_insert"
     "freteId" IN (
       SELECT f.id FROM fretes f
       JOIN caminhoes c ON c.id = f."caminhaoId"
-      WHERE c."motoristaId"::text = (auth.jwt() ->> 'motorista_id')
+      WHERE c."motoristaId" = current_motorista_id()
     )
   );

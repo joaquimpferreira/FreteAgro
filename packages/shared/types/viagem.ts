@@ -60,6 +60,10 @@ export interface Abastecimento {
  */
 export interface ViagemAtiva {
   freteId: string
+  /** Trip origin city/location — persisted for offline display on home screen (US7) */
+  origem?: string
+  /** Trip destination city/location — persisted for offline display on home screen (US7) */
+  destino?: string
   /** Ordered list of all legs; last element is the currently open leg */
   trechos: TrechoKm[]
   /** Index into trechos[] pointing to the currently open (unclosed) leg */

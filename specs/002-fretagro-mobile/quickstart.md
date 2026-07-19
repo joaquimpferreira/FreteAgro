@@ -23,7 +23,7 @@ This guide covers how to run the app locally and validate each user story end-to
 ## Setup
 
 ### 1. Install workspace dependencies
-
+export NODE_EXTRA_CA_CERTS=/tmp/mac-ca-combined.pem && cd /Users/joaquim.cardoso/Documents/FreteAgro/frete-agro/fretagro-mobile && npx expo start --reset-cache
 ```bash
 # From monorepo root
 pnpm install

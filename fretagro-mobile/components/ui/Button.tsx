@@ -14,7 +14,22 @@ interface ButtonProps {
   loading?: boolean
 }
 
-const variantStyles: Record<ButtonVariant, { container: string; text: string }> = {
+const inlineVariantStyles: Record<ButtonVariant, { container: object; text: object }> = {
+  primary: {
+    container: { backgroundColor: '#22C55E' },
+    text: { color: '#000', fontWeight: '600' as const },
+  },
+  secondary: {
+    container: { backgroundColor: '#161616', borderWidth: 1, borderColor: '#1f1f1f' },
+    text: { color: '#fff', fontWeight: '600' as const },
+  },
+  destructive: {
+    container: { backgroundColor: '#ef4444' },
+    text: { color: '#fff', fontWeight: '600' as const },
+  },
+}
+
+const nativewindVariantStyles: Record<ButtonVariant, { container: string; text: string }> = {
   primary: {
     container: 'bg-primary active:opacity-80',
     text: 'text-black font-semibold',
@@ -36,18 +51,24 @@ export function Button({
   disabled = false,
   loading = false,
 }: ButtonProps) {
-  const { container, text } = variantStyles[variant]
+  const { container: containerClass, text: textClass } = nativewindVariantStyles[variant]
+  const { container: containerStyle, text: textStyle } = inlineVariantStyles[variant]
 
   return (
     <Pressable
       onPress={onPress}
       disabled={disabled || loading}
-      className={`min-h-[44px] rounded-xl px-4 items-center justify-center ${container} ${disabled || loading ? 'opacity-50' : ''}`}
+      style={[
+        { minHeight: 44, borderRadius: 12, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
+        containerStyle,
+        (disabled || loading) ? { opacity: 0.5 } : {},
+      ]}
+      className={`min-h-[44px] rounded-xl px-4 items-center justify-center ${containerClass} ${disabled || loading ? 'opacity-50' : ''}`}
     >
       {loading ? (
         <ActivityIndicator color={variant === 'primary' ? '#000' : '#fff'} />
       ) : (
-        <Text className={`text-base ${text}`}>{label}</Text>
+        <Text style={[{ fontSize: 16 }, textStyle]} className={`text-base ${textClass}`}>{label}</Text>
       )}
     </Pressable>
   )

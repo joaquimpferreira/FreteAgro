@@ -1,0 +1,17 @@
+TN:
+SF:lib/finance/calcularAcerto.ts
+FN:13,calcularComissao
+FN:28,calcularSaldoFinal
+FNF:2
+FNH:2
+FNDA:10,calcularComissao
+FNDA:7,calcularSaldoFinal
+DA:13,1
+DA:17,10
+DA:28,1
+DA:32,7
+LF:4
+LH:4
+BRF:0
+BRH:0
+end_of_record

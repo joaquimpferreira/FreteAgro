@@ -13,6 +13,9 @@ export type ApiErrorCode =
   | 'INTERNAL_ERROR'
   // Domain-specific codes
   | 'EMAIL_TAKEN'
+  | 'EMAIL_IN_USE'
+  | 'NO_CREDENTIALS'
+  | 'AUTH_UPDATE_FAILED'
   | 'PLACA_TAKEN'
   | 'DRIVER_ALREADY_BOUND'
   | 'FREIGHT_NOT_CONCLUDED'
@@ -46,6 +49,10 @@ export function notFound(resource = 'Recurso') {
 
 export function conflict(code: ApiErrorCode, message: string) {
   return NextResponse.json<ApiError>({ error: code, message }, { status: 409 })
+}
+
+export function badRequest(code: ApiErrorCode, message: string) {
+  return NextResponse.json<ApiError>({ error: code, message }, { status: 400 })
 }
 
 export function validationError(details: unknown) {

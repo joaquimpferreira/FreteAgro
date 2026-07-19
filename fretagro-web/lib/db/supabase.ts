@@ -1,11 +1,13 @@
 // Supabase client factories — lib/db/supabase.ts
 // Principle VI: SUPABASE_SERVICE_ROLE_KEY is server-only; never bundled.
-// Two separate factories:
+// Three separate factories:
 //   createServerSupabaseClient — for Server Components, Route Handlers (SSR)
 //   createBrowserSupabaseClient — for Client Components (browser)
+//   createAdminSupabaseClient — server-only, uses service role for auth.admin operations
 
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { createBrowserClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 
 // ─── Server client (Server Components / Route Handlers) ─────────────────────
@@ -48,5 +50,16 @@ export function createBrowserSupabaseClient() {
   return createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  )
+}
+
+// ─── Admin client (server-only Route Handlers) ────────────────────────────────
+// Uses the service role key — bypasses RLS and can call auth.admin.* methods.
+// NEVER call this from Client Components or expose to the browser.
+export function createAdminSupabaseClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } },
   )
 }

@@ -1,11 +1,11 @@
-// app/api/motoristas/[id]/convite/route.ts — Re-send WhatsApp activation invite
+// app/api/motoristas/[id]/convite/route.ts — Re-send WhatsApp login reminder
 // POST /api/motoristas/[id]/convite — FR-006
-// contracts/motoristas.md
+// Notifies the driver via WhatsApp with their login e-mail.
 
 import { prisma } from '@/lib/db/prisma'
 import { requireFrotaId } from '@/lib/api/tenant'
-import { notFound, ok } from '@/lib/api/errors'
-import { sendWhatsApp } from '@/lib/notifications/whatsapp'
+import { badRequest, notFound, ok } from '@/lib/api/errors'
+import { sendDriverInvite } from '@/lib/notifications/whatsapp'
 
 interface RouteContext {
   params: { id: string }
@@ -21,13 +21,12 @@ export async function POST(_req: Request, { params }: RouteContext) {
   })
   if (!motorista) return notFound('Motorista')
 
-  const inviteMsg = [
-    `Olá ${motorista.nome}! Você foi cadastrado como motorista no FreteAgro.`,
-    `Para ativar seu acesso ao aplicativo, acesse o link:`,
-    `${process.env.NEXTAUTH_URL ?? ''}/ativar?token=PENDENTE&id=${motorista.id}`,
-  ].join('\n')
+  if (!motorista.email) {
+    return badRequest('NO_CREDENTIALS', 'Este motorista ainda não possui credenciais de acesso cadastradas.')
+  }
 
-  const result = await sendWhatsApp({ to: motorista.whatsapp, body: inviteMsg })
+  const appUrl = process.env.NEXTAUTH_URL ?? 'o aplicativo FreteAgro'
+  const result = await sendDriverInvite(motorista.whatsapp, motorista.nome, motorista.email, appUrl)
 
   return ok({ sent: result.success, ...(result.error && { error: result.error }) })
 }

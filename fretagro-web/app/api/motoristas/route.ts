@@ -1,15 +1,16 @@
 // app/api/motoristas/route.ts — Motoristas collection handlers
 // GET  /api/motoristas — list drivers (paginated, ?status)
-// POST /api/motoristas — create a driver + dispatch WhatsApp activation invite
-// FR-010, FR-006 · contracts/motoristas.md
+// POST /api/motoristas — create a driver + Supabase Auth user (credentials set by owner)
+// FR-010 · contracts/motoristas.md
 
 import { prisma } from '@/lib/db/prisma'
 import { requireFrotaId } from '@/lib/api/tenant'
 import { validateBody } from '@/lib/api/validate'
-import { created, ok } from '@/lib/api/errors'
+import { badRequest, created, internalError, ok } from '@/lib/api/errors'
 import { parsePagination, buildPaginatedResponse } from '@/lib/api/pagination'
 import { motoristaCreateSchema } from '@/lib/fleet/schemas'
-import { sendWhatsApp } from '@/lib/notifications/whatsapp'
+import { createAdminSupabaseClient } from '@/lib/db/supabase'
+import { sendDriverInvite } from '@/lib/notifications/whatsapp'
 import type { Prisma } from '@prisma/client'
 
 // ─── GET /api/motoristas ──────────────────────────────────────────────────────
@@ -57,34 +58,59 @@ export async function POST(req: Request) {
   const { data, error } = await validateBody(req, motoristaCreateSchema)
   if (error) return error
 
-  const motorista = await prisma.motorista.create({
-    data: {
-      nome:               data.nome,
-      cpf:                data.cpf ?? null,
-      whatsapp:           data.whatsapp,
-      percentualComissao: data.percentualComissao,
-      tipoContrato:       data.tipoContrato ?? 'autonomo',
-      frotaId,
-      status:             'ativo',
-      appAtivado:         false,
-    },
-    include: {
-      caminhao: {
-        select: { id: true, placa: true, modelo: true, status: true },
-      },
-    },
+  const supabase = createAdminSupabaseClient()
+
+  // 1. Create Supabase Auth user with the credentials defined by the fleet owner.
+  const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+    email:            data.email,
+    password:         data.senha,
+    email_confirm:    true, // no email verification needed — owner controls credentials
+    user_metadata:    { nome: data.nome, frotaId },
   })
 
-  // Dispatch WhatsApp activation invite (FR-006)
-  // Non-blocking — registration succeeds even if the message fails to send.
-  const inviteMsg = [
-    `Olá ${motorista.nome}! Você foi cadastrado como motorista no FreteAgro.`,
-    `Para ativar seu acesso ao aplicativo, acesse o link:`,
-    `${process.env.NEXTAUTH_URL ?? ''}/ativar?token=PENDENTE&id=${motorista.id}`,
-  ].join('\n')
+  if (authError) {
+    if (authError.message?.toLowerCase().includes('already registered')) {
+      return badRequest('EMAIL_IN_USE', 'Este e-mail já está em uso por outro usuário.')
+    }
+    return internalError(`Erro ao criar conta no serviço de autenticação: ${authError.message}`)
+  }
 
-  sendWhatsApp({ to: motorista.whatsapp, body: inviteMsg }).catch((err) => {
-    console.error('[POST /api/motoristas] WhatsApp invite failed:', err)
+  const supabaseUserId = authData.user.id
+
+  // 2. Create the Motorista record in the database.
+  let motorista
+  try {
+    motorista = await prisma.motorista.create({
+      data: {
+        nome:               data.nome,
+        cpf:                data.cpf ?? null,
+        email:              data.email,
+        supabaseUserId,
+        whatsapp:           data.whatsapp,
+        percentualComissao: data.percentualComissao,
+        tipoContrato:       data.tipoContrato ?? 'autonomo',
+        frotaId,
+        status:             'ativo',
+        appAtivado:         true,
+      },
+      include: {
+        caminhao: {
+          select: { id: true, placa: true, modelo: true, status: true },
+        },
+      },
+    })
+  } catch (dbError) {
+    // Rollback: delete the Supabase Auth user so the email can be reused.
+    await supabase.auth.admin.deleteUser(supabaseUserId).catch(() => undefined)
+    const msg = dbError instanceof Error ? dbError.message : 'Erro desconhecido.'
+    return internalError(`Erro ao salvar motorista no banco de dados: ${msg}`)
+  }
+
+  // 3. Notify the driver via WhatsApp with their login email.
+  // Non-blocking — registration succeeds even if the message fails.
+  const appUrl = process.env.NEXTAUTH_URL ?? 'o aplicativo FreteAgro'
+  sendDriverInvite(data.whatsapp, data.nome, data.email, appUrl).catch((err) => {
+    console.error('[POST /api/motoristas] WhatsApp notification failed:', err)
   })
 
   return created(motorista)

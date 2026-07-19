@@ -100,12 +100,14 @@ model Motorista {
   id                  String        @id @default(cuid())
   nome                String
   cpf                 String?
+  email               String?       // login email in Supabase Auth (set by fleet owner)
+  supabaseUserId      String?       @unique // Supabase Auth user ID
   whatsapp            String
   // e.g. 12 = 12%; integer 0–100
   percentualComissao  Int
   tipoContrato        TipoContrato  @default(autonomo)
   status              StatusAtivo   @default(ativo)
-  // false until the driver activates their account via WhatsApp invite (FR-007)
+  // true once the fleet owner has created credentials for this driver
   appAtivado          Boolean       @default(false)
   createdAt           DateTime      @default(now())
 

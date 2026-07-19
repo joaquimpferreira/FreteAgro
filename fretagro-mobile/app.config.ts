@@ -20,19 +20,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       backgroundColor: '#0D0D0D',
     },
     package: 'com.fretagro.mobile',
-    intentFilters: [
-      {
-        action: 'VIEW',
-        autoVerify: true,
-        data: [
-          {
-            scheme: 'fretagroapp',
-            host: 'ativar',
-          },
-        ],
-        category: ['BROWSABLE', 'DEFAULT'],
-      },
-    ],
   },
   ios: {
     supportsTablet: false,

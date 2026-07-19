@@ -31,6 +31,8 @@ export interface Motorista {
   id: string
   nome: string
   cpf?: string
+  email?: string
+  supabaseUserId?: string
   whatsapp: string
   percentualComissao: number
   tipoContrato: TipoContrato
@@ -72,8 +74,20 @@ export interface CaminhaoUpdateInput extends Partial<CaminhaoCreateInput> {
 
 export interface MotoristaCreateInput {
   nome: string
+  email: string
+  senha: string
   whatsapp: string
   percentualComissao: number
+  tipoContrato?: TipoContrato
+  cpf?: string
+}
+
+export interface MotoristaUpdateInput {
+  nome?: string
+  email?: string
+  senha?: string
+  whatsapp?: string
+  percentualComissao?: number
   tipoContrato?: TipoContrato
   cpf?: string
 }

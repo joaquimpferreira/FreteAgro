@@ -3,14 +3,19 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
-      "@fretagro/types": ["../packages/shared/types/index.ts"],
-      "@fretagro/types/*": ["../packages/shared/types/*"]
+      "@fretagro/types": [
+        "../packages/shared/types/index.ts"
+      ],
+      "@fretagro/types/*": [
+        "../packages/shared/types/*"
+      ]
     }
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
     ".expo/types/**/*.d.ts",
-    "expo-env.d.ts"
+    "expo-env.d.ts",
+    ".expo/types/**/*.ts"
   ]
 }

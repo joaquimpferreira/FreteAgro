@@ -62,17 +62,19 @@ export async function sendWhatsApp(message: WhatsAppMessage): Promise<WhatsAppRe
 }
 
 /**
- * Sends the driver activation invite.
- * Called from POST /api/motoristas when a new driver is registered (FR-006).
+ * Sends the driver login credentials notification.
+ * Called from POST /api/motoristas when the fleet owner registers a new driver.
  *
- * @param whatsapp  - Driver's 11-digit Brazilian phone number (digits only)
- * @param nomeMotorista - Driver's name for personalisation
- * @param activationLink - Full URL for the activation page
+ * @param whatsapp       - Driver's 11-digit Brazilian phone number (digits only)
+ * @param nomeMotorista  - Driver's name for personalisation
+ * @param email          - Login e-mail set by the fleet owner
+ * @param appName        - App name or URL shown in the message
  */
 export async function sendDriverInvite(
   whatsapp: string,
   nomeMotorista: string,
-  activationLink: string,
+  email: string,
+  appName: string,
 ): Promise<WhatsAppResult> {
   // Strip non-digits and prepend Brazilian country code
   const digits = whatsapp.replace(/\D/g, '')
@@ -80,9 +82,10 @@ export async function sendDriverInvite(
 
   const body =
     `Olá, ${nomeMotorista}! 🚛\n\n` +
-    `Você foi cadastrado no FreteAgro. Acesse o link abaixo para ativar sua conta e começar a registrar suas viagens:\n\n` +
-    `${activationLink}\n\n` +
-    `O link é válido por 48 horas. Em caso de dúvidas, fale com o dono da frota.`
+    `Você foi cadastrado no FreteAgro. Acesse ${appName} e faça login com:\n\n` +
+    `📧 E-mail: ${email}\n` +
+    `🔑 Senha: definida pelo dono da frota\n\n` +
+    `Em caso de dúvidas, fale com o dono da frota.`
 
   return sendWhatsApp({ to, body })
 }
