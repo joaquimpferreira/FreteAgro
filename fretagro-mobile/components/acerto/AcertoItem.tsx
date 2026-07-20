@@ -37,25 +37,30 @@ interface AcertoItemProps {
 }
 
 export function AcertoItem({ acerto, onPress }: AcertoItemProps) {
-  const settledAt = acerto.realizadoEm ?? acerto.createdAt
+  const isPendente = acerto.status === 'pendente'
+  const displayDate = isPendente ? acerto.createdAt : (acerto.realizadoEm ?? acerto.createdAt)
 
   return (
     <Pressable
       className="bg-surface rounded-xl px-4 py-3 mb-3 min-h-[60px] flex-row items-center justify-between active:opacity-70"
       onPress={() => onPress(acerto.id)}
       accessibilityRole="button"
-      accessibilityLabel={`Acerto de ${centavosToReais(acerto.saldoFinal)} realizado em ${formatDate(settledAt)}`}
+      accessibilityLabel={`Acerto de ${centavosToReais(acerto.saldoFinal)} ${isPendente ? 'a receber' : 'realizado em ' + formatDate(displayDate)}`}
     >
       <View className="flex-1 gap-1">
         <Text className="text-white font-semibold text-base">
           {centavosToReais(acerto.saldoFinal)}
         </Text>
         <Text className="text-gray-400 text-sm">
-          {formatDate(settledAt)}
+          {isPendente ? `Aberto em ${formatDate(displayDate)}` : formatDate(displayDate)}
         </Text>
       </View>
 
-      <Badge label="Realizado" variant="success" />
+      {isPendente ? (
+        <Badge label="A receber" variant="warning" />
+      ) : (
+        <Badge label="Realizado" variant="success" />
+      )}
     </Pressable>
   )
 }

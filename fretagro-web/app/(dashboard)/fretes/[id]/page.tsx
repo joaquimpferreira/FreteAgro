@@ -6,7 +6,7 @@
 import { useParams, useRouter } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, ChevronRight, Receipt } from 'lucide-react'
+import { ArrowLeft, ChevronRight, Receipt, Fuel } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -25,6 +25,7 @@ import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 import { formatMoeda } from '@/lib/finance/formatMoeda'
 import { useFreteLancamentos } from '@/hooks/useFretes'
 import type { Frete } from '@/types/frete'
+import type { Abastecimento } from '@fretagro/types'
 import type { LancamentoCreateInput } from '@/lib/fretes/schemas'
 
 const STATUS_NEXT_LABEL: Record<string, string> = {
@@ -51,7 +52,7 @@ export default function FreteDetailPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
 
-  const [frete, setFrete]             = useState<(Frete & { totalDespesas: number }) | null>(null)
+  const [frete, setFrete]             = useState<(Frete & { totalDespesas: number; totalAbastecimentos: number; abastecimentos: Abastecimento[] }) | null>(null)
   const [loadingFrete, setLoadingFrete] = useState(true)
   const [advancing, setAdvancing]     = useState(false)
   const [isSavingLancamento, setIsSavingLancamento] = useState(false)
@@ -262,7 +263,7 @@ export default function FreteDetailPage() {
       {/* Summary */}
       <div className="rounded-lg border border-border bg-card p-5 grid grid-cols-2 sm:grid-cols-4 gap-4">
         <MetricItem label="Valor bruto" value={formatMoeda(frete.valorBruto)} />
-        <MetricItem label="Total despesas" value={formatMoeda(frete.totalDespesas)} valueClass="text-destructive" />
+        <MetricItem label="Total despesas" value={formatMoeda(frete.totalDespesas + frete.totalAbastecimentos)} valueClass="text-destructive" />
         <MetricItem label="KM inicial" value={String(frete.kmInicial)} />
         <MetricItem label="KM final" value={frete.kmFinal ? String(frete.kmFinal) : '—'} />
       </div>
@@ -346,6 +347,62 @@ export default function FreteDetailPage() {
               <span className="text-muted-foreground">Total</span>
               <span className="font-semibold text-destructive">
                 {formatMoeda(lancamentosData.totalDespesas)}
+              </span>
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* Abastecimentos (registrados pelo app do motorista) */}
+      <section aria-labelledby="abastecimentos-heading">
+        <div className="mb-4 flex items-center gap-2">
+          <h2 id="abastecimentos-heading" className="text-base font-semibold text-foreground">
+            Abastecimentos
+          </h2>
+          <Badge variant="outline">{frete.abastecimentos?.length ?? 0}</Badge>
+        </div>
+
+        {!frete.abastecimentos?.length ? (
+          <p className="text-sm text-muted-foreground py-4">Nenhum abastecimento registrado.</p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {frete.abastecimentos.map((a) => (
+              <div
+                key={a.id}
+                className="flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3"
+              >
+                <Fuel className="h-4 w-4 text-muted-foreground shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground capitalize">
+                    {a.subtipo}
+                  </p>
+                  <p className="text-sm text-muted-foreground truncate">
+                    {Number(a.litros).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} L
+                    {' × '}
+                    {formatMoeda(Math.round(Number(a.precoPorLitro) * 100))}/L
+                    {a.local ? ` · ${a.local}` : ''}
+                  </p>
+                </div>
+                <p className="text-sm font-medium text-destructive shrink-0">
+                  {formatMoeda(a.valorTotal)}
+                </p>
+                {a.fotoUrl && (
+                  <a
+                    href={a.fotoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="shrink-0"
+                    aria-label="Ver nota do abastecimento"
+                  >
+                    <Receipt className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
+                  </a>
+                )}
+              </div>
+            ))}
+            <div className="flex items-center justify-between px-4 py-2 text-sm">
+              <span className="text-muted-foreground">Total</span>
+              <span className="font-semibold text-destructive">
+                {formatMoeda(frete.totalAbastecimentos)}
               </span>
             </div>
           </div>

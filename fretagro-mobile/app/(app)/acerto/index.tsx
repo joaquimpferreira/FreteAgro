@@ -14,16 +14,19 @@ import { useRouter } from 'expo-router'
 import { OfflineBanner } from '../../../components/ui/OfflineBanner'
 import { SaldoCard } from '../../../components/acerto/SaldoCard'
 import { AcertoItem } from '../../../components/acerto/AcertoItem'
+import { FreteAguardandoItem } from '../../../components/acerto/FreteAguardandoItem'
 import { useAcerto } from '../../../hooks/useAcerto'
 import type { Acerto } from '@fretagro/types'
 
 export default function AcertoScreen() {
   const router = useRouter()
-  const { pendingBalance, acertoHistory, loading, error } = useAcerto()
+  const { pendingBalance, pendingAcertos, awaitingAcertos, acertoHistory, loading, error } = useAcerto()
 
   function handlePressAcerto(id: string) {
     router.push(`/(app)/acerto/${id}`)
   }
+
+  const hasAnyItem = awaitingAcertos.length > 0 || pendingAcertos.length > 0 || acertoHistory.length > 0
 
   return (
     <View className="flex-1 bg-background">
@@ -50,6 +53,30 @@ export default function AcertoScreen() {
               <SaldoCard balance={pendingBalance} />
             )}
 
+            {/* Concluded fretes awaiting acerto from fleet owner */}
+            {!loading && awaitingAcertos.length > 0 && (
+              <>
+                <Text className="text-gray-400 text-sm font-medium uppercase tracking-wide mt-2">
+                  Aguardando acerto
+                </Text>
+                {awaitingAcertos.map((item) => (
+                  <FreteAguardandoItem key={item.id} frete={item} />
+                ))}
+              </>
+            )}
+
+            {/* Pending acertos — value confirmed by fleet owner, payment not yet made */}
+            {!loading && pendingAcertos.length > 0 && (
+              <>
+                <Text className="text-gray-400 text-sm font-medium uppercase tracking-wide mt-2">
+                  A Receber
+                </Text>
+                {pendingAcertos.map((item) => (
+                  <AcertoItem key={item.id} acerto={item} onPress={handlePressAcerto} />
+                ))}
+              </>
+            )}
+
             {/* History section header */}
             {!loading && acertoHistory.length > 0 && (
               <Text className="text-gray-400 text-sm font-medium uppercase tracking-wide mt-2">
@@ -62,10 +89,10 @@ export default function AcertoScreen() {
           <AcertoItem acerto={item} onPress={handlePressAcerto} />
         )}
         ListEmptyComponent={
-          !loading ? (
+          !loading && !hasAnyItem ? (
             <View className="items-center py-8 gap-2">
               <Text className="text-gray-500 text-center">
-                Nenhum acerto realizado ainda.
+                Nenhum acerto registrado ainda.
               </Text>
               <Text className="text-gray-600 text-sm text-center">
                 Seus acertos financeiros aparecerão aqui após serem registrados pelo dono da frota.

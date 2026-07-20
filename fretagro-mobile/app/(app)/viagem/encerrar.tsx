@@ -8,6 +8,7 @@ import { View, Text, ScrollView, Alert } from 'react-native'
 import { router } from 'expo-router'
 import * as Haptics from 'expo-haptics'
 import { useViagemStore } from '../../../store/viagemStore'
+import { drain } from '../../../lib/sync/syncQueue'
 import { ViagemResumo } from '../../../components/viagem/ViagemResumo'
 import { Button } from '../../../components/ui/Button'
 import { Input } from '../../../components/ui/Input'
@@ -75,6 +76,11 @@ export default function EncerrarViagem() {
 
     try {
       encerrarViagem(kmFinalNum)
+      // Fire-and-forget sync so the closed trip (CLOSE_TRECHO + CLOSE_VIAGEM)
+      // reaches the server right away when online, instead of waiting for the
+      // next connectivity change / app-foreground transition. Errors are handled
+      // inside drain() (retry + dead-letter); offline stays queued as before.
+      void drain()
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
       router.replace('/(app)/viagem/resumo')
     } catch (err: any) {

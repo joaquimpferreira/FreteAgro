@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react'
 import { ActivityIndicator, AppState, AppStateStatus, View } from 'react-native'
 import { Redirect, Tabs } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
+import { FloatingTabBar } from '../../components/ui/FloatingTabBar'
 import { OfflineBanner } from '../../components/ui/OfflineBanner'
 import { PendingSyncList } from '../../components/ui/PendingSyncList'
 import { useSyncStatus } from '../../hooks/useSync'
@@ -75,11 +76,9 @@ export default function AppLayout() {
         onClose={() => setPendingSyncVisible(false)}
       />
       <Tabs
+        tabBar={(props) => <FloatingTabBar {...props} />}
         screenOptions={{
           headerShown: false,
-          tabBarStyle: { backgroundColor: '#161616', borderTopColor: '#1f1f1f' },
-          tabBarActiveTintColor: '#22C55E',
-          tabBarInactiveTintColor: '#6b7280',
           sceneContainerStyle: { backgroundColor: '#0D0D0D' },
         }}
       >

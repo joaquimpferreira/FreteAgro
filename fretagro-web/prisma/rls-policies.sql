@@ -135,11 +135,26 @@ CREATE POLICY "fretes_motorista_update"
 -- lancamentos
 -- ──────────────────────────────────────────────────────────────────────────────
 DROP POLICY IF EXISTS "lancamentos_fleet_all"        ON lancamentos;
+DROP POLICY IF EXISTS "lancamentos_motorista_select" ON lancamentos;
 DROP POLICY IF EXISTS "lancamentos_motorista_insert" ON lancamentos;
 
 CREATE POLICY "lancamentos_fleet_all"
   ON lancamentos FOR ALL
   USING ("frotaId" = current_frota_id());
+
+-- Driver may read their own trip expenses. Required so the mobile offline sync
+-- upsert (which returns the inserted row) is not blocked by RLS, and so the
+-- "Meus ganhos"/histórico screens can list expenses. Mirrors the select
+-- policies on trechos_km and abastecimentos.
+CREATE POLICY "lancamentos_motorista_select"
+  ON lancamentos FOR SELECT
+  USING (
+    "freteId" IN (
+      SELECT f.id FROM fretes f
+      JOIN caminhoes c ON c.id = f."caminhaoId"
+      WHERE c."motoristaId" = current_motorista_id()
+    )
+  );
 
 CREATE POLICY "lancamentos_motorista_insert"
   ON lancamentos FOR INSERT

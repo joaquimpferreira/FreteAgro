@@ -6,15 +6,16 @@
 // the app itself does not need any additional network configuration.
 // Layer: app — may import from components/, hooks/, lib/ (only via mobileAuth).
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   FlatList,
   Pressable,
+  RefreshControl,
   Text,
   View,
 } from 'react-native'
-import { useRouter } from 'expo-router'
+import { useRouter, useFocusEffect } from 'expo-router'
 import { supabase } from '../../../lib/supabase/client'
 import { OfflineBanner } from '../../../components/ui/OfflineBanner'
 import { Badge } from '../../../components/ui/Badge'
@@ -83,10 +84,11 @@ export default function HistoricoScreen() {
   const router = useRouter()
   const [fretes, setFretes] = useState<Frete[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchHistorico = useCallback(async () => {
-    setLoading(true)
+  const fetchHistorico = useCallback(async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true)
     setError(null)
     try {
       // RLS policy fretes_motorista_select already restricts rows to the
@@ -109,8 +111,24 @@ export default function HistoricoScreen() {
     }
   }, [])
 
-  useEffect(() => {
-    fetchHistorico()
+  // Refetch every time the screen regains focus (e.g. returning here right after
+  // encerrar a viagem), so a just-synced trip appears without restarting the app.
+  // Silent after the first load to avoid a full-screen spinner flash on tab switch.
+  const hasLoadedRef = useRef(false)
+  useFocusEffect(
+    useCallback(() => {
+      fetchHistorico({ silent: hasLoadedRef.current })
+      hasLoadedRef.current = true
+    }, [fetchHistorico]),
+  )
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true)
+    try {
+      await fetchHistorico()
+    } finally {
+      setRefreshing(false)
+    }
   }, [fetchHistorico])
 
   const handlePress = (id: string) => {
@@ -148,6 +166,14 @@ export default function HistoricoScreen() {
             renderItem={({ item }) => <FreteRow frete={item} onPress={handlePress} />}
             initialNumToRender={10}
             maxToRenderPerBatch={5}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor="#22C55E"
+                colors={['#22C55E']}
+              />
+            }
             ListEmptyComponent={
               <View className="flex-1 items-center justify-center mt-20 gap-3">
                 <Text className="text-white text-lg font-semibold">Nenhuma viagem concluída</Text>

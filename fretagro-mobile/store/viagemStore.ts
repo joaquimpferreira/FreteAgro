@@ -290,6 +290,7 @@ export const useViagemStore = create<ViagemStore>((set, get) => ({
     enqueueOp('CLOSE_VIAGEM', {
       id: viagem.freteId,
       status: 'concluido',
+      kmFinal: trechoFechado.kmFinal,
       dataFim: new Date().toISOString(),
     })
   },

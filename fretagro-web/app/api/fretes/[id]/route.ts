@@ -37,15 +37,17 @@ export async function GET(_req: Request, { params }: RouteContext) {
           motorista: { select: { id: true, nome: true, percentualComissao: true } },
         },
       },
-      lancamentos: { orderBy: { createdAt: 'asc' } },
-      acerto:      true,
+      lancamentos:    { orderBy: { createdAt: 'asc' } },
+      abastecimentos: { orderBy: { createdAt: 'asc' } },
+      acerto:         true,
     },
   })
 
   if (!frete) return notFound('Frete')
 
-  const totalDespesas = frete.lancamentos.reduce((sum, l) => sum + l.valor, 0)
-  return ok({ ...frete, totalDespesas })
+  const totalDespesas       = frete.lancamentos.reduce((sum, l) => sum + l.valor, 0)
+  const totalAbastecimentos = frete.abastecimentos.reduce((sum, a) => sum + a.valorTotal, 0)
+  return ok({ ...frete, totalDespesas, totalAbastecimentos })
 }
 
 // ─── PATCH /api/fretes/[id] ───────────────────────────────────────────────────
