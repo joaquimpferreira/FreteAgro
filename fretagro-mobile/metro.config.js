@@ -28,15 +28,35 @@ config.resolver.blockList = blockListRegex;
 config.resolver.unstable_enableSymlinks = true;
 config.resolver.unstable_enablePackageExports = true;
 
+// Módulos que devem sempre resolver para a instância única do projeto mobile.
+// Crítico para evitar "Invalid hook call" causado por múltiplas versões do React
+// no pnpm store (ex: react@18.3.1 do workspace web sendo bundled junto com
+// react@18.2.0 do mobile).
+const reactDir = path.resolve(projectRoot, 'node_modules/react');
+const SINGLETON_FILES = {
+  react: path.join(reactDir, 'index.js'),
+  'react/jsx-runtime': path.join(reactDir, 'jsx-runtime.js'),
+  'react/jsx-dev-runtime': path.join(reactDir, 'jsx-dev-runtime.js'),
+};
+
+config.resolver.extraNodeModules = {
+  react: reactDir,
+};
+
 // Fix: o servidor HMR envia paths relativos ao monorepoRoot (frete-agro/)
 // mas os resolve a partir do projectRoot (fretagro-mobile/). O custom resolver
 // intercede e reescreve esses paths usando o monorepoRoot como base.
+// Também intercepta imports de React para garantir uma única instância.
 config.resolver.resolveRequest = (context, moduleName, platform) => {
+  // Força todos os imports de react e seus subpaths para a instância do mobile
+  if (SINGLETON_FILES[moduleName]) {
+    return { type: 'sourceFile', filePath: SINGLETON_FILES[moduleName] };
+  }
+
   if (
     moduleName.startsWith('./node_modules/.pnpm/') ||
     moduleName.startsWith('../node_modules/.pnpm/')
   ) {
-    const absolutePath = path.resolve(monorepoRoot, moduleName);
     return context.resolveRequest(
       { ...context, originModulePath: monorepoRoot + '/.' },
       moduleName,

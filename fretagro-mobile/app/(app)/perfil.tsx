@@ -9,9 +9,9 @@
 //
 // Layer: app — imports from components/, hooks/, lib/auth/ (via mobileAuth), lib/supabase/ (data only)
 
-import { useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { ActivityIndicator, Alert, ScrollView, Text, View } from 'react-native'
-import { useRouter } from 'expo-router'
+import { useFocusEffect, useRouter } from 'expo-router'
 import { getSession } from '../../lib/auth/mobileAuth'
 import * as mobileAuth from '../../lib/auth/mobileAuth'
 import { supabase } from '../../lib/supabase/client'
@@ -34,40 +34,44 @@ export default function PerfilScreen() {
   const [error, setError] = useState<string | null>(null)
   const [loggingOut, setLoggingOut] = useState(false)
 
-  useEffect(() => {
-    async function fetchPerfil() {
-      try {
-        const session = await getSession()
-        if (!session) {
-          router.replace('/(auth)/login')
-          return
-        }
-
-        // caminhoes is a back-relation (FK is caminhoes.motoristaId), embedded via Supabase nested select
-        const { data, error: fetchError } = await supabase
-          .from('motoristas')
-          .select('nome, whatsapp, percentualComissao, caminhoes(placa, modelo)')
-          .eq('supabaseUserId', session.user.id)
-          .single()
-
-        if (fetchError) throw fetchError
-
-        const caminhoes = data.caminhoes as Array<{ placa: string; modelo: string }> | null
-        setPerfil({
-          nome: data.nome,
-          whatsapp: data.whatsapp,
-          percentualComissao: data.percentualComissao,
-          caminhao: Array.isArray(caminhoes) && caminhoes.length > 0 ? caminhoes[0] : null,
-        })
-      } catch {
-        setError('Não foi possível carregar os dados do perfil.')
-      } finally {
-        setLoading(false)
+  const fetchPerfil = useCallback(async () => {
+    try {
+      const session = await getSession()
+      if (!session) {
+        router.replace('/(auth)/login')
+        return
       }
-    }
 
-    fetchPerfil()
-  }, [])
+      // caminhoes is a back-relation (FK is caminhoes.motoristaId), embedded via Supabase nested select
+      const { data, error: fetchError } = await supabase
+        .from('motoristas')
+        .select('nome, whatsapp, percentualComissao, caminhoes(placa, modelo)')
+        .eq('supabaseUserId', session.user.id)
+        .single()
+
+      if (fetchError) throw fetchError
+
+      const caminhoes = data.caminhoes as Array<{ placa: string; modelo: string }> | null
+      setPerfil({
+        nome: data.nome,
+        whatsapp: data.whatsapp,
+        percentualComissao: data.percentualComissao,
+        caminhao: Array.isArray(caminhoes) && caminhoes.length > 0 ? caminhoes[0] : null,
+      })
+    } catch {
+      setError('Não foi possível carregar os dados do perfil.')
+    } finally {
+      setLoading(false)
+    }
+  }, [router])
+
+  // Refetch on focus so a truck linked on the web platform shows up without
+  // restarting the app.
+  useFocusEffect(
+    useCallback(() => {
+      fetchPerfil()
+    }, [fetchPerfil])
+  )
 
   function handleLogout() {
     Alert.alert('Sair', 'Tem certeza que deseja sair?', [

@@ -3,9 +3,9 @@
 // Blocks if an active trip already exists (FR-010) or driver has no truck (FR-009).
 // Layer: app — imports from hooks/, components/, lib/auth/, lib/supabase/.
 
-import { useState, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import { View, Text, ScrollView, Alert } from 'react-native'
-import { router } from 'expo-router'
+import { router, useFocusEffect } from 'expo-router'
 import * as Haptics from 'expo-haptics'
 import { useViagemStore } from '../../../store/viagemStore'
 import { getSession } from '../../../lib/auth/mobileAuth'
@@ -46,46 +46,53 @@ export default function IniciarViagem() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
 
-  useEffect(() => {
-    async function fetchProfile() {
-      try {
-        const session = await getSession()
-        if (!session) {
-          setProfileError('Sessão não encontrada. Faça login novamente.')
-          setLoadingProfile(false)
-          return
-        }
-
-        // Column names are camelCase (Prisma does not auto-convert to snake_case
-        // without @map). supabaseUserId / frotaId match the DB exactly.
-        // caminhao is a back-relation (FK is caminhoes.motoristaId), so we embed.
-        const { data: motorista, error } = await supabase
-          .from('motoristas')
-          .select('id, frotaId, caminhoes(id)')
-          .eq('supabaseUserId', session.user.id)
-          .single()
-
-        if (error) throw error
-
-        const caminhoes = motorista.caminhoes as Array<{ id: string }> | null
-        const caminhaoId =
-          Array.isArray(caminhoes) && caminhoes.length > 0
-            ? caminhoes[0].id
-            : null
-
-        setProfile({
-          motoristaId: motorista.id,
-          frotaId: motorista.frotaId,
-          caminhaoId,
-        })
-      } catch (err) {
-        setProfileError('Não foi possível carregar o perfil do motorista.')
-      } finally {
+  const fetchProfile = useCallback(async () => {
+    setLoadingProfile(true)
+    setProfileError(null)
+    try {
+      const session = await getSession()
+      if (!session) {
+        setProfileError('Sessão não encontrada. Faça login novamente.')
         setLoadingProfile(false)
+        return
       }
+
+      // Column names are camelCase (Prisma does not auto-convert to snake_case
+      // without @map). supabaseUserId / frotaId match the DB exactly.
+      // caminhao is a back-relation (FK is caminhoes.motoristaId), so we embed.
+      const { data: motorista, error } = await supabase
+        .from('motoristas')
+        .select('id, frotaId, caminhoes(id)')
+        .eq('supabaseUserId', session.user.id)
+        .single()
+
+      if (error) throw error
+
+      const caminhoes = motorista.caminhoes as Array<{ id: string }> | null
+      const caminhaoId =
+        Array.isArray(caminhoes) && caminhoes.length > 0
+          ? caminhoes[0].id
+          : null
+
+      setProfile({
+        motoristaId: motorista.id,
+        frotaId: motorista.frotaId,
+        caminhaoId,
+      })
+    } catch (err) {
+      setProfileError('Não foi possível carregar o perfil do motorista.')
+    } finally {
+      setLoadingProfile(false)
     }
-    fetchProfile()
   }, [])
+
+  // Refetch the driver profile every time the screen gains focus so a truck
+  // linked on the web platform is reflected without restarting the app.
+  useFocusEffect(
+    useCallback(() => {
+      fetchProfile()
+    }, [fetchProfile])
+  )
 
   // FR-010: block if active trip exists
   if (viagem) {
@@ -134,6 +141,7 @@ export default function IniciarViagem() {
           <Text className="text-gray-400 text-sm text-center">
             Solicite ao dono da frota que vincule um caminhão ao seu perfil para poder iniciar viagens.
           </Text>
+          <Button label="Verificar novamente" onPress={() => fetchProfile()} />
         </Card>
       </View>
     )
