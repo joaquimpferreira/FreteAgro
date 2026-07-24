@@ -9,7 +9,8 @@
 // while loading. No code change is required — trust the proxy CA at the OS level.
 
 import { View, Text, ScrollView } from 'react-native'
-import { useRouter } from 'expo-router'
+import { useCallback, useRef } from 'react'
+import { useRouter, useFocusEffect } from 'expo-router'
 import { useViagemAtiva } from '../../hooks/useViagemAtiva'
 import { useAcerto } from '../../hooks/useAcerto'
 import { Button } from '../../components/ui/Button'
@@ -26,7 +27,21 @@ function formatReais(centavos: number): string {
 export default function HomeScreen() {
   const router = useRouter()
   const { isViagemAtiva, tripRoute, pendenteSincronizacao } = useViagemAtiva()
-  const { pendingBalance, loading: acertoLoading } = useAcerto()
+  const { pendingBalance, loading: acertoLoading, refresh: refreshAcerto } = useAcerto()
+
+  // Refetch the pending acerto balance whenever the home screen regains focus,
+  // so the card reflects payments confirmed on the web dashboard or a newly
+  // started trip's pending balance without needing an app restart. Skip the
+  // first focus — the hook already fetches on mount.
+  const hasFocusedRef = useRef(false)
+  useFocusEffect(
+    useCallback(() => {
+      if (hasFocusedRef.current) {
+        refreshAcerto()
+      }
+      hasFocusedRef.current = true
+    }, [refreshAcerto]),
+  )
 
   return (
     <View style={{ flex: 1, backgroundColor: '#0D0D0D' }} className="flex-1 bg-background">

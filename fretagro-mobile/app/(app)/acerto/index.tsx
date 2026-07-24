@@ -9,8 +9,9 @@
 //
 // Layer: app — may import from components/, hooks/, lib/ (only via mobileAuth for auth)
 
-import { ActivityIndicator, FlatList, Text, View } from 'react-native'
-import { useRouter } from 'expo-router'
+import { ActivityIndicator, FlatList, RefreshControl, Text, View } from 'react-native'
+import { useCallback, useRef, useState } from 'react'
+import { useRouter, useFocusEffect } from 'expo-router'
 import { OfflineBanner } from '../../../components/ui/OfflineBanner'
 import { SaldoCard } from '../../../components/acerto/SaldoCard'
 import { AcertoItem } from '../../../components/acerto/AcertoItem'
@@ -20,7 +21,30 @@ import type { Acerto } from '@fretagro/types'
 
 export default function AcertoScreen() {
   const router = useRouter()
-  const { pendingBalance, pendingAcertos, awaitingAcertos, acertoHistory, loading, error } = useAcerto()
+  const { pendingBalance, pendingAcertos, awaitingAcertos, acertoHistory, loading, error, refresh } = useAcerto()
+  const [refreshing, setRefreshing] = useState(false)
+
+  // Refetch every time the screen regains focus so a payment confirmed on the
+  // web dashboard (status → realizado) or a newly opened acerto shows up without
+  // restarting the app. Skip the very first focus — the hook already fetches on mount.
+  const hasFocusedRef = useRef(false)
+  useFocusEffect(
+    useCallback(() => {
+      if (hasFocusedRef.current) {
+        refresh()
+      }
+      hasFocusedRef.current = true
+    }, [refresh]),
+  )
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true)
+    try {
+      await refresh()
+    } finally {
+      setRefreshing(false)
+    }
+  }, [refresh])
 
   function handlePressAcerto(id: string) {
     router.push(`/(app)/acerto/${id}`)
@@ -38,6 +62,14 @@ export default function AcertoScreen() {
         initialNumToRender={10}
         maxToRenderPerBatch={5}
         contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#22C55E"
+            colors={['#22C55E']}
+          />
+        }
         ListHeaderComponent={
           <View className="gap-4 mb-4">
             <Text className="text-white text-2xl font-bold">Meu Acerto</Text>

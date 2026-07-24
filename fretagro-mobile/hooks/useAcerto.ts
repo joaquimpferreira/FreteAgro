@@ -57,6 +57,8 @@ export interface AcertoState {
   acertoHistory: Acerto[]
   loading: boolean
   error: string | null
+  /** Re-fetch acertos from Supabase (e.g. on screen focus or pull-to-refresh) */
+  refresh: () => Promise<void>
 }
 
 const ZERO_BALANCE: PendingBalance = {
@@ -223,5 +225,13 @@ export function useAcerto(): AcertoState {
     fetchAcertos()
   }, [fetchAcertos])
 
-  return { pendingBalance, pendingAcertos, awaitingAcertos, acertoHistory, loading, error }
+  return {
+    pendingBalance,
+    pendingAcertos,
+    awaitingAcertos,
+    acertoHistory,
+    loading,
+    error,
+    refresh: fetchAcertos,
+  }
 }
