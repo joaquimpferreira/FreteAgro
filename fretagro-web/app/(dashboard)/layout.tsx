@@ -1,11 +1,12 @@
 // Server Component — auth guard lives in middleware; this layout assembles UI.
 // Principle II: session check delegated to lib/auth/config.ts via middleware.ts.
+import type { ReactNode } from 'react'
 import { auth } from '@/lib/auth/config'
 import { redirect } from 'next/navigation'
 import { DashboardLayoutClient } from './_components/DashboardLayoutClient'
 
 interface DashboardLayoutProps {
-  children: React.ReactNode
+  children: ReactNode
 }
 
 export default async function DashboardLayout({ children }: DashboardLayoutProps) {
