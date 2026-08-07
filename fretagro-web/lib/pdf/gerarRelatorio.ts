@@ -21,7 +21,6 @@ const MUTED   = [100,116,139] as const    // slate-500
 const GREEN   = [22, 163, 74] as const    // green-600
 const RED     = [220, 38,  38] as const   // red-600
 const ORANGE  = [234, 88,  12] as const   // orange-600
-const HEADER  = [248,250,252] as const    // slate-50  (table header bg)
 const ALT     = [241,245,249] as const    // slate-100 (alt row)
 const WHITE   = [255,255,255] as const
 const BORDER  = [203,213,225] as const    // slate-300
