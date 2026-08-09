@@ -111,6 +111,9 @@ importers:
       babel-jest:
         specifier: ^29.7.0
         version: 29.7.0(@babel/core@7.29.7)
+      babel-preset-expo:
+        specifier: ^11.0.15
+        version: 11.0.15(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))
       jest:
         specifier: ^29.7.0
         version: 29.7.0(@types/node@22.20.0)
