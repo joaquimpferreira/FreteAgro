@@ -4,6 +4,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'FreteAgro',
   slug: 'fretagro-mobile',
+  owner: 'joaquimpferreira',
   version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/icon.png',
@@ -43,7 +44,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
     supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
     eas: {
-      projectId: 'your-eas-project-id',
+      projectId: '73537c29-1e97-436f-a4c3-fafe1ba4ffb4',
     },
   },
   experiments: {
