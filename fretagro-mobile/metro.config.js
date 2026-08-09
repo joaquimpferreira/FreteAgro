@@ -1,6 +1,7 @@
 const { getDefaultConfig } = require('expo/metro-config');
 const { withNativeWind } = require('nativewind/metro');
 const path = require('path');
+const fs = require('fs');
 
 const projectRoot = __dirname;
 const monorepoRoot = path.resolve(projectRoot, '..');
@@ -32,7 +33,11 @@ config.resolver.unstable_enablePackageExports = true;
 // Crítico para evitar "Invalid hook call" causado por múltiplas versões do React
 // no pnpm store (ex: react@18.3.1 do workspace web sendo bundled junto com
 // react@18.2.0 do mobile).
-const reactDir = path.resolve(projectRoot, 'node_modules/react');
+// Usa o caminho real (fs.realpathSync) em vez do symlink: o Watchman não
+// atravessa symlinks ao vigiar arquivos, então o SHA-1 de um arquivo acessado
+// via node_modules/react (link) nunca é computado — resolvendo para o
+// caminho físico dentro do pnpm store (que já está em watchFolders) evita isso.
+const reactDir = fs.realpathSync(path.resolve(projectRoot, 'node_modules/react'));
 const SINGLETON_FILES = {
   react: path.join(reactDir, 'index.js'),
   'react/jsx-runtime': path.join(reactDir, 'jsx-runtime.js'),
