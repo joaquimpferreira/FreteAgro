@@ -57,18 +57,18 @@ export function FretesRecentesTable({ fretes }: FretesRecentesTableProps) {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Rota</TableHead>
-          <TableHead className="hidden sm:table-cell">Motorista</TableHead>
-          <TableHead className="hidden md:table-cell">Placa</TableHead>
-          <TableHead className="hidden sm:table-cell">Data</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead className="text-right">Valor</TableHead>
+          <TableHead className="h-8">Rota</TableHead>
+          <TableHead className="hidden h-8 sm:table-cell">Motorista</TableHead>
+          <TableHead className="hidden h-8 md:table-cell">Placa</TableHead>
+          <TableHead className="hidden h-8 sm:table-cell">Data</TableHead>
+          <TableHead className="h-8">Status</TableHead>
+          <TableHead className="h-8 text-right">Valor</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {fretes.map((f) => (
           <TableRow key={f.id}>
-            <TableCell>
+            <TableCell className="py-1.5">
               <Link
                 href={`/fretes/${f.id}`}
                 className="font-medium text-foreground hover:text-primary hover:underline"
@@ -76,16 +76,16 @@ export function FretesRecentesTable({ fretes }: FretesRecentesTableProps) {
                 {f.origem} → {f.destino}
               </Link>
             </TableCell>
-            <TableCell className="hidden sm:table-cell text-muted-foreground">
+            <TableCell className="hidden py-1.5 sm:table-cell text-muted-foreground">
               {f.motoristaNome ?? '—'}
             </TableCell>
-            <TableCell className="hidden md:table-cell text-muted-foreground">
+            <TableCell className="hidden py-1.5 md:table-cell text-muted-foreground">
               {f.caminhaoPlaca}
             </TableCell>
-            <TableCell className="hidden sm:table-cell text-muted-foreground">
+            <TableCell className="hidden py-1.5 sm:table-cell text-muted-foreground">
               {new Date(f.dataInicio).toLocaleDateString('pt-BR')}
             </TableCell>
-            <TableCell>
+            <TableCell className="py-1.5">
               <Badge
                 variant="outline"
                 className={cn(STATUS_CLASSES[f.status])}
@@ -93,7 +93,7 @@ export function FretesRecentesTable({ fretes }: FretesRecentesTableProps) {
                 {STATUS_LABELS[f.status] ?? f.status}
               </Badge>
             </TableCell>
-            <TableCell className="text-right tabular-nums font-medium">
+            <TableCell className="py-1.5 text-right tabular-nums font-medium">
               {formatMoeda(f.valorBruto)}
             </TableCell>
           </TableRow>

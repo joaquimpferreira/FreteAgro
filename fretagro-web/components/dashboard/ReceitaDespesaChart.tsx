@@ -57,7 +57,7 @@ function formatReaisShort(centavos: number): string {
 export function ReceitaDespesaChart({ data }: ReceitaDespesaChartProps) {
   if (data.length === 0) {
     return (
-      <div className="flex h-52 items-center justify-center text-sm text-muted-foreground">
+      <div className="flex h-[190px] items-center justify-center text-sm text-muted-foreground">
         Sem dados no período selecionado.
       </div>
     )
@@ -69,7 +69,7 @@ export function ReceitaDespesaChart({ data }: ReceitaDespesaChartProps) {
   }))
 
   return (
-    <ChartContainer config={chartConfig} className="h-[300px] w-full">
+    <ChartContainer config={chartConfig} className="h-[160px] w-full">
       <AreaChart data={chartData} margin={{ top: 8, right: 4, bottom: 0, left: 0 }}>
         <defs>
           <linearGradient id="fillReceita" x1="0" y1="0" x2="0" y2="1">

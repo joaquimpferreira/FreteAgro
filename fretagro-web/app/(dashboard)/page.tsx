@@ -10,7 +10,7 @@ import { EmptyState } from '@/components/shared/EmptyState'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Package } from 'lucide-react'
-import { MetricCard } from '@/components/dashboard/MetricCard'
+import { MetricTrendCard } from '@/components/dashboard/MetricTrendCard'
 import { AlertaBanner } from '@/components/dashboard/AlertaBanner'
 import { ReceitaDespesaChart } from '@/components/dashboard/ReceitaDespesaChart'
 import { DespesasDonutChart } from '@/components/dashboard/DespesasDonutChart'
@@ -65,7 +65,7 @@ export default async function DashboardPage({
   const data   = await getDashboardData(frotaId, period)
 
   return (
-    <div className="flex flex-col gap-4 md:gap-6">
+    <div className="flex flex-col gap-3 md:gap-4">
       {/* ── Alertas ────────────────────────────────────────────── */}
       <AlertaBanner
         acertosPendentes={data.alertas.acertosPendentes}
@@ -73,48 +73,47 @@ export default async function DashboardPage({
       />
 
       {/* ── KPI Cards ─────────────────────────────────────────── */}
-      <div className="*:data-[slot=card]:shadow-xs grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
-        <MetricCard
+      <div className="*:data-[slot=card]:shadow-xs grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
+        <MetricTrendCard
           label="Receita Bruta"
           value={formatMoeda(data.kpis.receitaBruta)}
           href="/caixa"
-          trend={data.kpis.receitaBruta > 0 ? 'No período' : 'Sem receita'}
-          trendUp={data.kpis.receitaBruta > 0}
           description="Total recebido no período"
           sublabel="Fretes concluídos e acertos"
+          data={data.receitaDespesaPorMes.map((m) => ({ label: m.mes, value: m.receita }))}
+          format="moeda"
         />
-        <MetricCard
+        <MetricTrendCard
           label="Total de Fretes"
           value={String(data.kpis.totalFretes)}
           href="/fretes"
-          trend={data.kpis.totalFretes > 0 ? `${data.kpis.totalFretes} fretes` : 'Sem fretes'}
-          trendUp={data.kpis.totalFretes > 0}
           description="Fretes no período"
           sublabel="Em andamento e concluídos"
+          data={data.receitaDespesaPorMes.map((m) => ({ label: m.mes, value: m.totalFretes }))}
         />
-        <MetricCard
+        <MetricTrendCard
           label="Despesas Totais"
           value={formatMoeda(data.kpis.despesasTotais)}
           href="/caixa"
-          trend={data.kpis.despesasTotais > 0 ? 'No período' : 'Sem saídas'}
-          trendUp={false}
           description="Total de saídas no período"
           sublabel="Manutenção, combustível e outros"
+          data={data.receitaDespesaPorMes.map((m) => ({ label: m.mes, value: m.despesa }))}
+          format="moeda"
         />
-        <MetricCard
+        <MetricTrendCard
           label="Lucro Líquido"
           value={formatMoeda(data.kpis.lucroLiquido)}
           href="/caixa"
-          trend={data.kpis.lucroLiquido >= 0 ? 'Positivo' : 'Negativo'}
-          trendUp={data.kpis.lucroLiquido >= 0}
           description={data.kpis.lucroLiquido >= 0 ? 'Margem favorável' : 'Despesas acima da receita'}
           sublabel="Receita bruta menos despesas"
+          data={data.receitaDespesaPorMes.map((m) => ({ label: m.mes, value: m.receita - m.despesa }))}
+          format="moeda"
         />
       </div>
 
       {/* ── Gráfico principal ──────────────────────────────────── */}
       <Card>
-        <CardHeader>
+        <CardHeader className="p-4 pb-2">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <CardTitle>Receita vs Despesa</CardTitle>
@@ -127,25 +126,25 @@ export default async function DashboardPage({
             />
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 pt-0">
           <ReceitaDespesaChart data={data.receitaDespesaPorMes} />
         </CardContent>
       </Card>
 
       {/* ── Segunda linha: Donut | Fretes Recentes ─────────────── */}
-      <div className="grid gap-4 lg:grid-cols-[280px_1fr]">
+      <div className="grid gap-3 lg:grid-cols-[240px_1fr]">
         <Card>
-          <CardHeader>
+          <CardHeader className="p-4 pb-2">
             <CardTitle>Composição de Despesas</CardTitle>
             <CardDescription>Distribuição por categoria</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 pt-0">
             <DespesasDonutChart data={data.despesasPorCategoria} />
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="p-4 pb-2">
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle>Fretes Recentes</CardTitle>
@@ -156,7 +155,7 @@ export default async function DashboardPage({
               </Link>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 pt-0">
             <FretesRecentesTable fretes={data.fretesRecentes} />
           </CardContent>
         </Card>

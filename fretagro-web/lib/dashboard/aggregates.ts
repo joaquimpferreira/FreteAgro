@@ -92,6 +92,8 @@ export interface ReceitaDespesaMes {
   receita: number
   /** Centavos */
   despesa: number
+  /** Count of fretes concluded in this month */
+  totalFretes: number
 }
 
 export interface DespesaCategoria {
@@ -221,14 +223,15 @@ export async function getDashboardData(
     .sort((a, b) => b.total - a.total)
 
   // ── 7. Receita vs despesa by month ────────────────────────────────────────
-  const monthMap = new Map<string, { receita: number; despesa: number }>()
+  const monthMap = new Map<string, { receita: number; despesa: number; totalFretes: number }>()
 
   for (const f of fretes) {
     const d = f.dataFim ?? f.dataInicio
     const mes = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-    const entry = monthMap.get(mes) ?? { receita: 0, despesa: 0 }
+    const entry = monthMap.get(mes) ?? { receita: 0, despesa: 0, totalFretes: 0 }
     entry.receita += f.valorBruto
     entry.despesa += f.lancamentos.reduce((s, l) => s + l.valor, 0)
+    entry.totalFretes += 1
     monthMap.set(mes, entry)
   }
 
@@ -237,7 +240,7 @@ export async function getDashboardData(
     // into the current period but we aggregate them separately into the current month
     const now = new Date()
     const mes = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-    const entry = monthMap.get(mes) ?? { receita: 0, despesa: 0 }
+    const entry = monthMap.get(mes) ?? { receita: 0, despesa: 0, totalFretes: 0 }
     entry.despesa += l.valor
     monthMap.set(mes, entry)
   }

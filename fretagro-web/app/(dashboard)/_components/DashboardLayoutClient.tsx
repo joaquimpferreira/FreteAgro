@@ -18,7 +18,7 @@ export function DashboardLayoutClient({ children, userName, userEmail }: Dashboa
       <AppSidebar userName={userName} userEmail={userEmail} />
       <SidebarInset>
         <SiteHeader />
-        <div className="@container/main flex flex-1 flex-col gap-4 p-4 pt-4 md:gap-6 md:p-6 md:pt-6">
+        <div className="@container/main flex flex-1 flex-col p-4 pt-3 md:p-5 md:pt-4">
           {children}
         </div>
       </SidebarInset>

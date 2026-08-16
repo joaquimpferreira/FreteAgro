@@ -62,7 +62,7 @@ function buildChartConfig(data: DespesaCategoria[]): ChartConfig {
 export function DespesasDonutChart({ data }: DespesasDonutChartProps) {
   if (data.length === 0) {
     return (
-      <div className="flex h-52 items-center justify-center text-sm text-muted-foreground">
+      <div className="flex h-32 items-center justify-center text-sm text-muted-foreground">
         Sem despesas no período selecionado.
       </div>
     )
@@ -71,8 +71,8 @@ export function DespesasDonutChart({ data }: DespesasDonutChartProps) {
   const chartConfig = buildChartConfig(data)
 
   return (
-    <div className="flex flex-col gap-4">
-      <ChartContainer config={chartConfig} className="mx-auto h-[200px] w-full max-w-[260px]">
+    <div className="flex flex-col gap-2">
+      <ChartContainer config={chartConfig} className="mx-auto h-[110px] w-full max-w-[180px]">
         <PieChart>
           <ChartTooltip
             content={
@@ -91,11 +91,12 @@ export function DespesasDonutChart({ data }: DespesasDonutChartProps) {
             data={data}
             cx="50%"
             cy="50%"
-            innerRadius={55}
-            outerRadius={85}
+            innerRadius={32}
+            outerRadius={50}
             paddingAngle={2}
             dataKey="total"
             nameKey="categoria"
+            isAnimationActive={false}
           >
             {data.map((entry, index) => (
               <Cell
@@ -109,11 +110,11 @@ export function DespesasDonutChart({ data }: DespesasDonutChartProps) {
       </ChartContainer>
 
       {/* Legend */}
-      <ul className="grid grid-cols-2 gap-x-4 gap-y-1.5 px-1">
+      <ul className="grid grid-cols-2 gap-x-3 gap-y-1 px-1">
         {data.slice(0, 6).map((d, i) => (
-          <li key={d.categoria} className="flex items-center gap-2 min-w-0">
+          <li key={d.categoria} className="flex items-center gap-1.5 min-w-0">
             <span
-              className="h-2.5 w-2.5 shrink-0 rounded-sm"
+              className="h-2 w-2 shrink-0 rounded-sm"
               style={{ background: CHART_COLORS[i % CHART_COLORS.length] }}
             />
             <span className="truncate text-xs text-muted-foreground">
