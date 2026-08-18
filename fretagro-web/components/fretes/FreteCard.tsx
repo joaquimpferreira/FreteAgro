@@ -4,7 +4,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Package, MapPin, Truck, Trash2 } from 'lucide-react'
+import { Package, MapPin, Truck, User, Gauge, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from './StatusBadge'
 import { formatMoeda } from '@/lib/finance/formatMoeda'
@@ -55,6 +55,20 @@ export function FreteCard({ frete, onDelete }: FreteCardProps) {
         </span>
       </div>
 
+      {/* Who drove — placa + motorista (FR: every freight card shows its driver) */}
+      {frete.caminhao && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-p-sm text-grey-400">
+          <span className="flex items-center gap-1.5">
+            <Truck className="h-4 w-4 shrink-0 text-grey-500" aria-hidden="true" />
+            {frete.caminhao.placa}
+          </span>
+          <span className="flex items-center gap-1.5 min-w-0">
+            <User className="h-4 w-4 shrink-0 text-grey-500" aria-hidden="true" />
+            <span className="truncate">{frete.caminhao.motorista?.nome ?? 'Sem motorista'}</span>
+          </span>
+        </div>
+      )}
+
       {/* Financials */}
       <div className="grid grid-cols-2 gap-3 rounded-input bg-surface-elevated px-3 py-2">
         <div>
@@ -72,7 +86,7 @@ export function FreteCard({ frete, onDelete }: FreteCardProps) {
       {/* KM */}
       {frete.kmFinal && (
         <div className="flex items-center gap-2 text-p-sm text-grey-400">
-          <Truck className="h-4 w-4 shrink-0" aria-hidden="true" />
+          <Gauge className="h-4 w-4 shrink-0" aria-hidden="true" />
           <span>{frete.kmInicial} → {frete.kmFinal} km ({frete.kmFinal - frete.kmInicial} km)</span>
         </div>
       )}

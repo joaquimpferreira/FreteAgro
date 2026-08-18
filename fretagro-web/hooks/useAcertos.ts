@@ -7,6 +7,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { Acerto } from '@/types/acerto'
 import type { PaginatedResponse } from '@/lib/api/pagination'
+import type { AcertosStats } from '@/lib/acertos/aggregates'
 
 // ─── Filter options ───────────────────────────────────────────────────────────
 
@@ -127,6 +128,39 @@ export function useAcertos(options: AcertosFilterOptions = {}) {
     confirmAcerto,
     gerarComprovante,
   }
+}
+
+// ─── useAcertosStats ──────────────────────────────────────────────────────────
+// Aggregates over ALL acertos matching the current filter (not just the current page).
+
+export function useAcertosStats(options: Pick<AcertosFilterOptions, 'motoristaId' | 'status'> = {}) {
+  const { motoristaId, status } = options
+
+  const [data, setData]       = useState<AcertosStats | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError]     = useState<string | null>(null)
+
+  const fetchStats = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const params = new URLSearchParams()
+      if (motoristaId) params.set('motoristaId', motoristaId)
+      if (status)      params.set('status', status)
+
+      const res = await window.fetch(`/api/acertos/stats?${params}`)
+      if (!res.ok) throw new Error('Erro ao carregar estatísticas.')
+      setData(await res.json())
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro desconhecido.')
+    } finally {
+      setLoading(false)
+    }
+  }, [motoristaId, status])
+
+  useEffect(() => { fetchStats() }, [fetchStats])
+
+  return { data, loading, error, refetch: fetchStats }
 }
 
 // ─── useAcertoDetalhe ─────────────────────────────────────────────────────────

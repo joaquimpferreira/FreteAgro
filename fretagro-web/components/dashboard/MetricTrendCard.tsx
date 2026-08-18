@@ -59,8 +59,8 @@ export function MetricTrendCard({
   const caption = [description, sublabel].filter(Boolean).join(' · ')
 
   const content = (
-    <Card className="@container/card gap-0 overflow-hidden bg-gradient-to-t from-primary/5 to-card">
-      <CardHeader className="relative space-y-0.5 p-4 pb-1">
+    <Card className="@container/card flex h-full flex-col gap-0 overflow-hidden bg-gradient-to-t from-primary/5 to-card">
+      <CardHeader className="relative shrink-0 space-y-0.5 p-4 pb-1">
         <CardDescription>{label}</CardDescription>
         <CardTitle className="@[250px]/card:text-2xl text-xl font-semibold tabular-nums">
           {value}
@@ -76,12 +76,16 @@ export function MetricTrendCard({
         )}
       </CardHeader>
 
-      {data.length >= 2 && (
-        <MetricSparkline data={data} direction={direction} format={format} />
-      )}
+      {/* Fixed-height slot — reserved even without a sparkline so cards in the
+          same row stay the same height regardless of which ones have trend data. */}
+      <div className="h-10 shrink-0">
+        {data.length >= 2 && (
+          <MetricSparkline data={data} direction={direction} format={format} />
+        )}
+      </div>
 
       {caption && (
-        <CardFooter className="p-4 pt-1 text-xs">
+        <CardFooter className="mt-auto p-4 pt-1 text-xs">
           <div className="line-clamp-1 text-muted-foreground">{caption}</div>
         </CardFooter>
       )}
@@ -90,7 +94,7 @@ export function MetricTrendCard({
 
   if (href) {
     return (
-      <Link href={href} className="block">
+      <Link href={href} className="block h-full">
         {content}
       </Link>
     )

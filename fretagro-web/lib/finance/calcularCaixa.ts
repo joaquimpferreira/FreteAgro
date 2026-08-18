@@ -27,12 +27,25 @@ export interface ComissaoItem {
   valorComissao: number
 }
 
+/**
+ * A fuel purchase (diesel/arla) logged via the driver app. It reduces the
+ * owner's profit exactly like any other expense, so it merges into the
+ * 'combustivel' category alongside manually-entered Lancamento expenses of
+ * the same tipo — fuel is fuel regardless of which flow recorded it.
+ */
+export interface AbastecimentoExpenseItem {
+  /** valorTotal in centavos */
+  valorTotal: number
+}
+
 export interface CaixaInput {
   receitas: FreteReceitaItem[]
   /** All Lancamento expenses in the period (both frete-linked and avulso) */
   lancamentos: LancamentoExpenseItem[]
   /** Commission amounts from Acertos in the period */
   comissoes: ComissaoItem[]
+  /** Fuel purchases in the period — optional, defaults to none */
+  abastecimentos?: AbastecimentoExpenseItem[]
 }
 
 // ─── Output types ─────────────────────────────────────────────────────────────
@@ -73,7 +86,7 @@ export interface CaixaCalculado {
  * No rounding: integer arithmetic throughout (Principle IV).
  */
 export function calcularCaixa(input: CaixaInput): CaixaCalculado {
-  const { receitas, lancamentos, comissoes } = input
+  const { receitas, lancamentos, comissoes, abastecimentos = [] } = input
 
   // ── Receitas ────────────────────────────────────────────────────────────────
   const totalReceitas = receitas.reduce((sum, r) => sum + r.valor, 0)
@@ -83,6 +96,13 @@ export function calcularCaixa(input: CaixaInput): CaixaCalculado {
 
   for (const item of lancamentos) {
     categoryMap.set(item.tipo, (categoryMap.get(item.tipo) ?? 0) + item.valor)
+  }
+
+  // Fuel purchases are an expense too — merge into 'combustivel' alongside
+  // any manually-entered Lancamento of the same tipo.
+  const totalAbastecimentos = abastecimentos.reduce((sum, a) => sum + a.valorTotal, 0)
+  if (totalAbastecimentos > 0) {
+    categoryMap.set('combustivel', (categoryMap.get('combustivel') ?? 0) + totalAbastecimentos)
   }
 
   // Add commission total as its own category (comes from Acerto, not Lancamento)

@@ -16,6 +16,8 @@ const makeLancamento = (tipo: string, valor: number) => ({ tipo, valor })
 
 const makeComissao = (valorComissao: number) => ({ valorComissao })
 
+const makeAbastecimento = (valorTotal: number) => ({ valorTotal })
+
 // ─── Basic calculation ────────────────────────────────────────────────────────
 
 describe('calcularCaixa', () => {
@@ -147,6 +149,47 @@ describe('calcularCaixa', () => {
 
     const totals = result.despesasPorCategoria.map((c) => c.total)
     expect(totals).toEqual([...totals].sort((a, b) => b - a))
+  })
+
+  it('merges abastecimentos into the combustivel category (fuel reduces profit)', () => {
+    const input: CaixaInput = {
+      receitas:      [makeFrete('f1', 5_000_000)],
+      lancamentos:   [makeLancamento('combustivel', 100_000), makeLancamento('patio', 50_000)],
+      comissoes:     [],
+      abastecimentos: [makeAbastecimento(600_000), makeAbastecimento(200_000)],
+    }
+    const result = calcularCaixa(input)
+
+    const combustivel = result.despesasPorCategoria.find((c) => c.categoria === 'combustivel')
+    expect(combustivel?.total).toBe(100_000 + 600_000 + 200_000) // 900_000 — merged, not separate
+    expect(result.totalDespesas).toBe(900_000 + 50_000) // 950_000
+    expect(result.lucroLiquido).toBe(5_000_000 - 950_000)
+  })
+
+  it('creates a combustivel category from abastecimentos alone when there is no matching Lancamento', () => {
+    const input: CaixaInput = {
+      receitas:       [makeFrete('f1', 1_000_000)],
+      lancamentos:    [],
+      comissoes:      [],
+      abastecimentos: [makeAbastecimento(300_000)],
+    }
+    const result = calcularCaixa(input)
+
+    expect(result.despesasPorCategoria).toEqual([
+      { categoria: 'combustivel', total: 300_000, percentual: 100 },
+    ])
+    expect(result.totalDespesas).toBe(300_000)
+  })
+
+  it('defaults abastecimentos to none when omitted (backward compatible)', () => {
+    const input: CaixaInput = {
+      receitas:    [makeFrete('f1', 1_000_000)],
+      lancamentos: [makeLancamento('combustivel', 100_000)],
+      comissoes:   [],
+    }
+    const result = calcularCaixa(input)
+
+    expect(result.totalDespesas).toBe(100_000)
   })
 
   it('does not round lucroLiquido — integer arithmetic only (Principle IV)', () => {

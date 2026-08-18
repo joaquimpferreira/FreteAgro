@@ -11,6 +11,7 @@ import { ArrowLeft, User, Truck, CheckCircle2, AlertCircle, MessageCircle } from
 import { Badge } from '@/components/ui/badge'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 import { EmptyState } from '@/components/shared/EmptyState'
+import { MotoristaStatsPanel } from '@/components/frota/MotoristaStatsPanel'
 import { useFretes } from '@/hooks/useFretes'
 import type { Motorista } from '@/types/frota'
 
@@ -68,7 +69,7 @@ export default function MotoristaDetailPage() {
   )
 
   return (
-    <div className="flex flex-col gap-6 max-w-3xl">
+    <div className="flex flex-col gap-6 max-w-5xl">
       {/* Back nav */}
       <Link
         href="/frota"
@@ -152,6 +153,9 @@ export default function MotoristaDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Analytics do motorista */}
+      <MotoristaStatsPanel motoristaId={motorista.id} />
 
       {/* Fretes section */}
       <div className="flex flex-col gap-4">

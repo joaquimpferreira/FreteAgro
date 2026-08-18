@@ -39,14 +39,18 @@ export async function GET(_req: Request, { params }: RouteContext) {
       },
       lancamentos:    { orderBy: { createdAt: 'asc' } },
       abastecimentos: { orderBy: { createdAt: 'asc' } },
+      trechos:        { orderBy: { ordem: 'asc' } },
       acerto:         true,
     },
   })
 
   if (!frete) return notFound('Frete')
 
-  const totalDespesas       = frete.lancamentos.reduce((sum, l) => sum + l.valor, 0)
+  const totalLancamentos    = frete.lancamentos.reduce((sum, l) => sum + l.valor, 0)
   const totalAbastecimentos = frete.abastecimentos.reduce((sum, a) => sum + a.valorTotal, 0)
+  // Fuel purchases reduce profit like any other expense — totalDespesas is the
+  // combined figure; totalAbastecimentos stays exposed for the itemized list.
+  const totalDespesas = totalLancamentos + totalAbastecimentos
   return ok({ ...frete, totalDespesas, totalAbastecimentos })
 }
 
@@ -96,17 +100,26 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       ...(data.valorBruto !== undefined && { valorBruto: data.valorBruto }),
     },
     include: {
-      caminhao: { select: { id: true, placa: true, modelo: true } },
+      caminhao: {
+        select: {
+          id: true, placa: true, modelo: true,
+          motorista: { select: { id: true, nome: true, percentualComissao: true } },
+        },
+      },
+      lancamentos:    { orderBy: { createdAt: 'asc' } },
+      abastecimentos: { orderBy: { createdAt: 'asc' } },
+      trechos:        { orderBy: { ordem: 'asc' } },
+      acerto:         true,
     },
   })
 
-  // Compute totalDespesas for the response
-  const despesasAgg = await prisma.lancamento.aggregate({
-    where:  { freteId: params.id },
-    _sum:   { valor: true },
-  })
+  // Same combined totalDespesas convention as GET /api/fretes/[id]: fuel
+  // purchases reduce profit like any other expense.
+  const totalLancamentos    = updated.lancamentos.reduce((sum, l) => sum + l.valor, 0)
+  const totalAbastecimentos = updated.abastecimentos.reduce((sum, a) => sum + a.valorTotal, 0)
+  const totalDespesas       = totalLancamentos + totalAbastecimentos
 
-  return ok({ ...updated, totalDespesas: despesasAgg._sum.valor ?? 0 })
+  return ok({ ...updated, totalDespesas, totalAbastecimentos })
 }
 
 // ─── DELETE /api/fretes/[id] ──────────────────────────────────────────────────

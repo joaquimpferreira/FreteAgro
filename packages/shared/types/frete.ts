@@ -39,6 +39,16 @@ export interface Frete {
   createdAt: string
   // Computed display value (sum of linked lancamentos)
   totalDespesas?: number
+  // Included by GET /api/fretes and GET /api/fretes/[id] — who drove this freight
+  caminhao?: FreteCaminhaoInfo
+}
+
+// Slim projection included in Frete list/detail responses (avoids circular references)
+export interface FreteCaminhaoInfo {
+  id: string
+  placa: string
+  modelo: string
+  motorista?: { id: string; nome: string } | null
 }
 
 export interface Lancamento {

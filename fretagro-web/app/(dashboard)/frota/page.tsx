@@ -13,6 +13,7 @@ import { CaminhaoModal } from '@/components/frota/CaminhaoModal'
 import { MotoristaModal } from '@/components/frota/MotoristaModal'
 import { VincularMotoristaModal } from '@/components/frota/VincularMotoristaModal'
 import { FrotaEmptyState } from '@/components/frota/FrotaEmptyState'
+import { FrotaOverviewStats } from '@/components/frota/FrotaOverviewStats'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 import { useCaminhoes, useMotoristas } from '@/hooks/useFrota'
 import type { Caminhao, Motorista } from '@/types/frota'
@@ -187,6 +188,9 @@ export default function FrotaPage() {
           <p className="text-sm text-destructive">{errorMsg}</p>
         </div>
       )}
+
+      {/* ─── Analytics da frota ──────────────────────────────────── */}
+      <FrotaOverviewStats />
 
       {/* ─── Trucks section ─────────────────────────────────────── */}
       <section aria-labelledby="caminhoes-heading">

@@ -9,9 +9,9 @@ import { validateBody } from '@/lib/api/validate'
 import { created, forbidden, ok } from '@/lib/api/errors'
 import { parsePagination, buildPaginatedResponse } from '@/lib/api/pagination'
 import { freteCreateSchema } from '@/lib/fretes/schemas'
+import { buildFretesWhere } from '@/lib/fretes/filters'
 import { assertDriverCaminhaoAccess } from '@/lib/auth/config'
 import { checkIdempotency, extractIdempotencyKey, storeIdempotencyResult } from '@/lib/api/idempotency'
-import type { Prisma } from '@prisma/client'
 
 // ─── GET /api/fretes ──────────────────────────────────────────────────────────
 
@@ -22,36 +22,7 @@ export async function GET(req: Request) {
 
   const url = new URL(req.url)
   const { skip, take, page, pageSize } = parsePagination(url.searchParams)
-
-  const statusParam      = url.searchParams.get('status')
-  const motoristaIdParam = url.searchParams.get('motoristaId')
-  const caminhaoIdParam  = url.searchParams.get('caminhaoId')
-  const fromParam        = url.searchParams.get('from')
-  const toParam          = url.searchParams.get('to')
-  const rotaParam        = url.searchParams.get('rota')
-
-  const where: Prisma.FreteWhereInput = { frotaId }
-
-  if (statusParam) where.status = statusParam as Prisma.EnumStatusFreteFilter
-  if (caminhaoIdParam) where.caminhaoId = caminhaoIdParam
-
-  // Filter by driver via their bound truck
-  if (motoristaIdParam) {
-    where.caminhao = { motoristaId: motoristaIdParam }
-  }
-
-  if (fromParam || toParam) {
-    where.dataInicio = {}
-    if (fromParam) where.dataInicio.gte = new Date(fromParam)
-    if (toParam)   where.dataInicio.lte = new Date(toParam)
-  }
-
-  if (rotaParam) {
-    where.OR = [
-      { origem:  { contains: rotaParam, mode: 'insensitive' } },
-      { destino: { contains: rotaParam, mode: 'insensitive' } },
-    ]
-  }
+  const where = buildFretesWhere(frotaId, url.searchParams)
 
   const [total, rows] = await Promise.all([
     prisma.frete.count({ where }),
@@ -70,20 +41,31 @@ export async function GET(req: Request) {
     }),
   ])
 
-  // Compute totalDespesas per frete (aggregation)
+  // Compute totalDespesas per frete — lancamentos (pátio, pedágio, etc.) plus
+  // fuel purchases logged via the driver app, which reduce profit just the same.
   const freteIds = rows.map((f) => f.id)
-  const despesasSums = await prisma.lancamento.groupBy({
-    by:   ['freteId'],
-    _sum: { valor: true },
-    where: { freteId: { in: freteIds } },
-  })
+  const [despesasSums, abastecimentosSums] = await Promise.all([
+    prisma.lancamento.groupBy({
+      by:   ['freteId'],
+      _sum: { valor: true },
+      where: { freteId: { in: freteIds } },
+    }),
+    prisma.abastecimento.groupBy({
+      by:   ['freteId'],
+      _sum: { valorTotal: true },
+      where: { freteId: { in: freteIds } },
+    }),
+  ])
   const despesasMap = new Map(
     despesasSums.map((d) => [d.freteId, d._sum.valor ?? 0]),
+  )
+  const abastecimentosMap = new Map(
+    abastecimentosSums.map((a) => [a.freteId, a._sum.valorTotal ?? 0]),
   )
 
   const data = rows.map((f) => ({
     ...f,
-    totalDespesas: despesasMap.get(f.id) ?? 0,
+    totalDespesas: (despesasMap.get(f.id) ?? 0) + (abastecimentosMap.get(f.id) ?? 0),
   }))
 
   return ok(buildPaginatedResponse(data, total, { page, pageSize, skip, take }))

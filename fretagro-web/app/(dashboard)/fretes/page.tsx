@@ -5,15 +5,21 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Plus } from 'lucide-react'
+import { Plus, Search, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { FreteCard } from '@/components/fretes/FreteCard'
+import { FretesStatsPanel } from '@/components/fretes/FretesStatsPanel'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { PeriodSelector, type PeriodOption, type DateRange } from '@/components/shared/PeriodSelector'
 import { useFretes } from '@/hooks/useFretes'
+import { useCaminhoes, useMotoristas } from '@/hooks/useFrota'
 import type { Frete } from '@/types/frete'
+
+const ALL = 'all'
 
 const STATUS_OPTIONS = [
   { value: '',                label: 'Todos' },
@@ -23,18 +29,44 @@ const STATUS_OPTIONS = [
 ]
 
 export default function FretesPage() {
-  const [statusFilter, setStatusFilter]   = useState('')
-  const [fromFilter, setFromFilter]       = useState('')
-  const [toFilter, setToFilter]           = useState('')
-  const [rotaFilter, setRotaFilter]       = useState('')
-  const [errorMsg, setErrorMsg]           = useState<string | null>(null)
+  const [statusFilter, setStatusFilter]       = useState('')
+  const [fromFilter, setFromFilter]           = useState('')
+  const [toFilter, setToFilter]               = useState('')
+  const [rotaFilter, setRotaFilter]           = useState('')
+  const [caminhaoFilter, setCaminhaoFilter]   = useState('')
+  const [motoristaFilter, setMotoristaFilter] = useState('')
+  const [errorMsg, setErrorMsg]               = useState<string | null>(null)
+  // Bumped on "Limpar filtros" to remount PeriodSelector back to its default display
+  const [periodResetKey, setPeriodResetKey]   = useState(0)
 
-  const { data, loading, deleteFrete } = useFretes({
-    status: statusFilter || undefined,
-    from:   fromFilter   || undefined,
-    to:     toFilter     || undefined,
-    rota:   rotaFilter   || undefined,
-  })
+  // Full lists (not paginated to 20) to populate the truck/driver filter selects
+  const { data: caminhoesData } = useCaminhoes({ pageSize: 100 })
+  const { data: motoristasData } = useMotoristas({ pageSize: 100 })
+
+  const filters = {
+    status:      statusFilter      || undefined,
+    from:        fromFilter        || undefined,
+    to:          toFilter          || undefined,
+    rota:        rotaFilter        || undefined,
+    caminhaoId:  caminhaoFilter    || undefined,
+    motoristaId: motoristaFilter   || undefined,
+  }
+
+  const { data, loading, deleteFrete } = useFretes(filters)
+
+  const hasActiveFilters = Boolean(
+    statusFilter || rotaFilter || caminhaoFilter || motoristaFilter || fromFilter,
+  )
+
+  function clearFilters() {
+    setStatusFilter('')
+    setRotaFilter('')
+    setCaminhaoFilter('')
+    setMotoristaFilter('')
+    setFromFilter('')
+    setToFilter('')
+    setPeriodResetKey((k) => k + 1)
+  }
 
   async function handleDelete(frete: Frete) {
     if (!confirm(`Excluir frete ${frete.origem} → ${frete.destino}? Se houver despesas ou acerto, o frete será inativado.`)) return
@@ -63,19 +95,19 @@ export default function FretesPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        {/* Status filter */}
-        <div className="flex items-center gap-1 flex-wrap">
+      <div className="flex flex-col gap-3">
+        {/* Status — view mode */}
+        <div className="flex flex-wrap items-center gap-1.5">
           {STATUS_OPTIONS.map((opt) => (
             <button
               key={opt.value}
               type="button"
               onClick={() => setStatusFilter(opt.value)}
               className={[
-              'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
-              statusFilter === opt.value
-                ? 'border-primary/50 bg-primary/10 text-primary'
-                : 'border-border bg-transparent text-muted-foreground hover:text-foreground',
+                'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
+                statusFilter === opt.value
+                  ? 'border-primary/50 bg-primary/10 text-primary'
+                  : 'border-border bg-transparent text-muted-foreground hover:text-foreground',
               ].join(' ')}
             >
               {opt.label}
@@ -83,19 +115,62 @@ export default function FretesPage() {
           ))}
         </div>
 
-        {/* Rota search */}
-        <input
-          type="text"
-          placeholder="Buscar por rota…"
-          value={rotaFilter}
-          onChange={(e) => setRotaFilter(e.target.value)}
-          className="h-9 rounded-md border border-border bg-muted px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
-        />
+        {/* Toolbar — search + refinement filters, grouped in one bar */}
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card/40 p-2">
+          <div className="relative min-w-[200px] flex-1">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+            <Input
+              type="text"
+              placeholder="Buscar por rota…"
+              value={rotaFilter}
+              onChange={(e) => setRotaFilter(e.target.value)}
+              className="h-9 pl-8"
+              aria-label="Buscar por rota"
+            />
+          </div>
 
-        {/* Period */}
-        <PeriodSelector
-          onChange={(_period: PeriodOption, range: DateRange) => { setFromFilter(range.from); setToFilter(range.to) }}
-        />
+          <Select value={caminhaoFilter || ALL} onValueChange={(v) => setCaminhaoFilter(v === ALL ? '' : v)}>
+            <SelectTrigger className="h-9 w-[150px] shrink-0" aria-label="Filtrar por caminhão">
+              <SelectValue placeholder="Caminhão" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL}>Todos os caminhões</SelectItem>
+              {caminhoesData?.data.map((c) => (
+                <SelectItem key={c.id} value={c.id}>{c.placa}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={motoristaFilter || ALL} onValueChange={(v) => setMotoristaFilter(v === ALL ? '' : v)}>
+            <SelectTrigger className="h-9 w-[150px] shrink-0" aria-label="Filtrar por motorista">
+              <SelectValue placeholder="Motorista" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL}>Todos os motoristas</SelectItem>
+              {motoristasData?.data.map((m) => (
+                <SelectItem key={m.id} value={m.id}>{m.nome}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <PeriodSelector
+            key={periodResetKey}
+            onChange={(_period: PeriodOption, range: DateRange) => { setFromFilter(range.from); setToFilter(range.to) }}
+            className="h-9 w-[150px] shrink-0"
+          />
+
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearFilters}
+              className="h-9 shrink-0 text-muted-foreground hover:text-foreground"
+            >
+              <X className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
+              Limpar
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Error */}
@@ -104,6 +179,9 @@ export default function FretesPage() {
           <p className="text-sm text-destructive">{errorMsg}</p>
         </div>
       )}
+
+      {/* Analytics — reacts to the filters above */}
+      <FretesStatsPanel filters={filters} />
 
       {/* Count */}
       {data && (

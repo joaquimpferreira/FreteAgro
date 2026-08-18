@@ -154,6 +154,11 @@ export async function getDashboardData(
       lancamentos: {
         select: { tipo: true, valor: true },
       },
+      // Fuel purchases logged via the driver app reduce profit just like any
+      // other expense — merged into the 'combustivel' category below.
+      abastecimentos: {
+        select: { valorTotal: true },
+      },
     },
   })
 
@@ -206,13 +211,20 @@ export async function getDashboardData(
     ...fretes.flatMap((f) => f.lancamentos),
     ...lancamentosAvulsos,
   ]
-  const despesasTotais = allLancamentos.reduce((s, l) => s + l.valor, 0)
+  const abastecimentosTotal = fretes
+    .flatMap((f) => f.abastecimentos)
+    .reduce((s, a) => s + a.valorTotal, 0)
+  const despesasTotais = allLancamentos.reduce((s, l) => s + l.valor, 0) + abastecimentosTotal
   const lucroLiquido   = receitaBruta - despesasTotais
 
   // ── 6. Expense composition by category ───────────────────────────────────
   const categoryMap = new Map<string, number>()
   for (const l of allLancamentos) {
     categoryMap.set(l.tipo, (categoryMap.get(l.tipo) ?? 0) + l.valor)
+  }
+  // Fuel purchases merge into 'combustivel' alongside manually-entered Lancamentos
+  if (abastecimentosTotal > 0) {
+    categoryMap.set('combustivel', (categoryMap.get('combustivel') ?? 0) + abastecimentosTotal)
   }
   const despesasPorCategoria: DespesaCategoria[] = Array.from(categoryMap.entries())
     .map(([categoria, total]) => ({
@@ -231,6 +243,7 @@ export async function getDashboardData(
     const entry = monthMap.get(mes) ?? { receita: 0, despesa: 0, totalFretes: 0 }
     entry.receita += f.valorBruto
     entry.despesa += f.lancamentos.reduce((s, l) => s + l.valor, 0)
+      + f.abastecimentos.reduce((s, a) => s + a.valorTotal, 0)
     entry.totalFretes += 1
     monthMap.set(mes, entry)
   }
@@ -381,6 +394,11 @@ export async function getRelatorioData(input: RelatorioInput): Promise<Relatorio
       lancamentos: {
         select: { tipo: true, valor: true, descricao: true },
       },
+      // Fuel purchases reduce profit like any other expense — folded into
+      // the "diesel" column below alongside manually-entered Lancamentos.
+      abastecimentos: {
+        select: { valorTotal: true },
+      },
       acerto: {
         select: {
           valorComissao: true,
@@ -399,6 +417,7 @@ export async function getRelatorioData(input: RelatorioInput): Promise<Relatorio
   // ── Build per-frete rows ──────────────────────────────────────────────────
   const fretesRows: FreteRelatorio[] = fretes.map((f, idx) => {
     const diesel      = f.lancamentos.filter(l => l.tipo === 'combustivel').reduce((s, l) => s + l.valor, 0)
+      + f.abastecimentos.reduce((s, a) => s + a.valorTotal, 0)
     const pedagio     = f.lancamentos.filter(l => l.tipo === 'pedagio').reduce((s, l) => s + l.valor, 0)
     const vale        = f.lancamentos.filter(l => l.tipo === 'vale').reduce((s, l) => s + l.valor, 0)
     const adiantamento= f.lancamentos.filter(l => l.tipo === 'adiantamento').reduce((s, l) => s + l.valor, 0)
@@ -470,6 +489,10 @@ export async function getRelatorioData(input: RelatorioInput): Promise<Relatorio
   const categoryMap = new Map<string, number>()
   for (const l of allLancamentos) {
     categoryMap.set(l.tipo, (categoryMap.get(l.tipo) ?? 0) + l.valor)
+  }
+  const abastecimentosTotal = fretes.flatMap(f => f.abastecimentos).reduce((s, a) => s + a.valorTotal, 0)
+  if (abastecimentosTotal > 0) {
+    categoryMap.set('combustivel', (categoryMap.get('combustivel') ?? 0) + abastecimentosTotal)
   }
   const despesasPorCategoria: DespesaCategoria[] = Array.from(categoryMap.entries())
     .map(([categoria, total]) => ({

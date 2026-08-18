@@ -8,6 +8,7 @@ import { useState, useEffect, useCallback } from 'react'
 import type { Frete, Lancamento } from '@/types/frete'
 import type { PaginatedResponse } from '@/lib/api/pagination'
 import type { FreteCreateInput, LancamentoCreateInput } from '@/lib/fretes/schemas'
+import type { FretesStats } from '@/lib/fretes/aggregates'
 
 // ─── Filter options ───────────────────────────────────────────────────────────
 
@@ -102,6 +103,43 @@ export function useFretes(options: FretesFilterOptions = {}) {
   }, [fetchFretes])
 
   return { data, loading, error, refetch: fetchFretes, createFrete, updateFrete, deleteFrete }
+}
+
+// ─── useFretesStats ───────────────────────────────────────────────────────────
+// Aggregates over ALL fretes matching the current filter (not just the current page).
+
+export function useFretesStats(options: FretesFilterOptions = {}) {
+  const { status, motoristaId, caminhaoId, from, to, rota } = options
+
+  const [data, setData]       = useState<FretesStats | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError]     = useState<string | null>(null)
+
+  const fetchStats = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const params = new URLSearchParams()
+      if (status)      params.set('status', status)
+      if (motoristaId) params.set('motoristaId', motoristaId)
+      if (caminhaoId)  params.set('caminhaoId', caminhaoId)
+      if (from)        params.set('from', from)
+      if (to)          params.set('to', to)
+      if (rota)        params.set('rota', rota)
+
+      const res = await window.fetch(`/api/fretes/stats?${params}`)
+      if (!res.ok) throw new Error('Erro ao carregar estatísticas.')
+      setData(await res.json())
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro desconhecido.')
+    } finally {
+      setLoading(false)
+    }
+  }, [status, motoristaId, caminhaoId, from, to, rota])
+
+  useEffect(() => { fetchStats() }, [fetchStats])
+
+  return { data, loading, error, refetch: fetchStats }
 }
 
 // ─── useFreteLancamentos ──────────────────────────────────────────────────────

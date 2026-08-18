@@ -10,6 +10,7 @@ import { AlertCircle, ChevronRight } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 import { EmptyState } from '@/components/shared/EmptyState'
+import { AcertosStatsPanel } from '@/components/acertos/AcertosStatsPanel'
 import { formatMoeda } from '@/lib/finance/formatMoeda'
 import { useAcertos } from '@/hooks/useAcertos'
 
@@ -95,6 +96,9 @@ export default function AcertosPage() {
 
       {/* Error */}
       {errorMsg && <p className="text-p-sm text-error">{errorMsg}</p>}
+
+      {/* Analytics — reacts to the status filter above */}
+      <AcertosStatsPanel status={(statusFilter as 'pendente' | 'realizado') || undefined} />
 
       {/* List */}
       {!data || data.data.length === 0 ? (

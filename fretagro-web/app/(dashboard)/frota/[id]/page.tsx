@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { FreteCard } from '@/components/fretes/FreteCard'
+import { CaminhaoStatsPanel } from '@/components/frota/CaminhaoStatsPanel'
 import { useFretes } from '@/hooks/useFretes'
 import type { Caminhao } from '@/types/frota'
 
@@ -74,7 +75,7 @@ export default function CaminhaoDetailPage() {
   )
 
   return (
-    <div className="flex flex-col gap-6 max-w-3xl">
+    <div className="flex flex-col gap-6 max-w-5xl">
       {/* Back nav */}
       <Link
         href="/frota"
@@ -138,6 +139,9 @@ export default function CaminhaoDetailPage() {
           </div>
         ) : null}
       </div>
+
+      {/* Analytics do caminhão */}
+      <CaminhaoStatsPanel caminhaoId={caminhao.id} />
 
       {/* Fretes section */}
       <div className="flex flex-col gap-4">

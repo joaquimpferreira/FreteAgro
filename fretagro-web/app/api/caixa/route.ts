@@ -52,6 +52,9 @@ export async function GET(req: Request) {
       lancamentos: {
         select: { tipo: true, valor: true },
       },
+      abastecimentos: {
+        select: { valorTotal: true },
+      },
       acerto: {
         select: { valorComissao: true },
       },
@@ -87,7 +90,12 @@ export async function GET(req: Request) {
     .filter((f) => f.acerto !== null)
     .map((f) => ({ valorComissao: f.acerto!.valorComissao }))
 
-  const resultado = calcularCaixa({ receitas, lancamentos, comissoes })
+  // Fuel purchases logged via the driver app — reduce owner profit like any other expense
+  const abastecimentos = fretes.flatMap((f) =>
+    f.abastecimentos.map((a) => ({ valorTotal: a.valorTotal })),
+  )
+
+  const resultado = calcularCaixa({ receitas, lancamentos, comissoes, abastecimentos })
 
   return ok({
     periodo: { from, to },

@@ -6,7 +6,7 @@
 import { useParams, useRouter } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, ChevronRight, Receipt, Fuel } from 'lucide-react'
+import { ArrowLeft, ChevronRight, Receipt, Fuel, Truck, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -21,11 +21,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { StatusBadge } from '@/components/fretes/StatusBadge'
 import { LancamentoForm } from '@/components/fretes/LancamentoForm'
+import { FreteStatsPanel } from '@/components/fretes/FreteStatsPanel'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 import { formatMoeda } from '@/lib/finance/formatMoeda'
 import { useFreteLancamentos } from '@/hooks/useFretes'
 import type { Frete } from '@/types/frete'
-import type { Abastecimento } from '@fretagro/types'
+import type { Abastecimento, TrechoKm } from '@fretagro/types'
 import type { LancamentoCreateInput } from '@/lib/fretes/schemas'
 
 const STATUS_NEXT_LABEL: Record<string, string> = {
@@ -52,7 +53,7 @@ export default function FreteDetailPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
 
-  const [frete, setFrete]             = useState<(Frete & { totalDespesas: number; totalAbastecimentos: number; abastecimentos: Abastecimento[] }) | null>(null)
+  const [frete, setFrete]             = useState<(Frete & { totalDespesas: number; totalAbastecimentos: number; abastecimentos: Abastecimento[]; trechos: TrechoKm[] }) | null>(null)
   const [loadingFrete, setLoadingFrete] = useState(true)
   const [advancing, setAdvancing]     = useState(false)
   const [isSavingLancamento, setIsSavingLancamento] = useState(false)
@@ -191,7 +192,7 @@ export default function FreteDetailPage() {
   const nextActionLabel = STATUS_NEXT_LABEL[frete.status]
 
   return (
-    <div className="flex flex-col gap-6 max-w-3xl">
+    <div className="flex flex-col gap-6 max-w-5xl">
       {/* ── KM final dialog ──────────────────────────────────────────────── */}
       <Dialog open={kmDialogOpen} onOpenChange={setKmDialogOpen}>
         <DialogContent className="sm:max-w-md">
@@ -250,6 +251,31 @@ export default function FreteDetailPage() {
             {new Date(frete.dataInicio).toLocaleDateString('pt-BR')}
             {frete.dataFim && ` — ${new Date(frete.dataFim).toLocaleDateString('pt-BR')}`}
           </p>
+          {frete.caminhao && (
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+              <Link
+                href={`/frota/${frete.caminhao.id}`}
+                className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground hover:underline"
+              >
+                <Truck className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                {frete.caminhao.placa}
+              </Link>
+              {frete.caminhao.motorista ? (
+                <Link
+                  href={`/frota/motoristas/${frete.caminhao.motorista.id}`}
+                  className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground hover:underline"
+                >
+                  <User className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  {frete.caminhao.motorista.nome}
+                </Link>
+              ) : (
+                <span className="flex items-center gap-1.5 text-muted-foreground">
+                  <User className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  Sem motorista
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -263,10 +289,18 @@ export default function FreteDetailPage() {
       {/* Summary */}
       <div className="rounded-lg border border-border bg-card p-5 grid grid-cols-2 sm:grid-cols-4 gap-4">
         <MetricItem label="Valor bruto" value={formatMoeda(frete.valorBruto)} />
-        <MetricItem label="Total despesas" value={formatMoeda(frete.totalDespesas + frete.totalAbastecimentos)} valueClass="text-destructive" />
+        <MetricItem label="Total despesas" value={formatMoeda(frete.totalDespesas)} valueClass="text-destructive" />
         <MetricItem label="KM inicial" value={String(frete.kmInicial)} />
         <MetricItem label="KM final" value={frete.kmFinal ? String(frete.kmFinal) : '—'} />
       </div>
+
+      {/* Analytics da viagem */}
+      <FreteStatsPanel
+        kmInicial={frete.kmInicial}
+        kmFinal={frete.kmFinal}
+        trechos={frete.trechos ?? []}
+        abastecimentos={frete.abastecimentos ?? []}
+      />
 
       {/* Status action */}
       {nextActionLabel && (
@@ -319,12 +353,12 @@ export default function FreteDetailPage() {
                 className="flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3"
               >
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground">
+                  <div className="flex items-center text-sm font-medium text-foreground">
                     {TIPO_LABELS[l.tipo] ?? l.tipo}
                     {l.deducaoAcerto && (
                       <Badge variant="warning" className="ml-2 text-xs">Deduz acerto</Badge>
                     )}
-                  </p>
+                  </div>
                   {l.descricao && <p className="text-sm text-muted-foreground truncate">{l.descricao}</p>}
                 </div>
                 <p className="text-sm font-medium text-destructive shrink-0">
