@@ -1,30 +1,34 @@
 // app/(app)/despesas/abastecimento.tsx
-// Fuel/Arla refuel registration screen.
-// valorTotal is computed automatically from litros × precoPorLitro — never entered manually.
-// trechoId is automatically set by the store to the current open leg (enables mediaDiesel per FR-013).
+// Fuel / Arla registration.
+// valorTotal is computed from litros × precoPorLitro and shown live — never typed.
+// trechoId is set by the store to the current open leg (enables mediaDiesel, FR-013).
 // Layer: app — imports from store/, components/, lib/ only.
 
 import { useState, useMemo } from 'react'
-import { View, Text, ScrollView, Pressable, Alert } from 'react-native'
+import { View, ScrollView, Alert } from 'react-native'
 import { router } from 'expo-router'
 import * as Haptics from 'expo-haptics'
 import { useViagemStore } from '../../../store/viagemStore'
 import type { SubtipoAbastecimento } from '@fretagro/types'
-import { Input } from '../../../components/ui/Input'
+import { Text } from '../../../components/ui/Text'
 import { Button } from '../../../components/ui/Button'
-import { Card } from '../../../components/ui/Card'
+import { TextField } from '../../../components/ui/TextField'
+import { Surface } from '../../../components/ui/Surface'
+import { SegmentedButtons } from '../../../components/ui/SegmentedButtons'
+import { TopAppBar } from '../../../components/ui/TopAppBar'
+import { EmptyState } from '../../../components/ui/EmptyState'
 import { FotoNota } from '../../../components/despesas/FotoNota'
+import { formatReais } from '../../../lib/utils/format'
+import { space } from '../../../lib/theme'
+import { makeStyles } from '../../../lib/theme/ThemeProvider'
 
-function centavosToReais(centavos: number): string {
-  return (centavos / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-}
-
-const SUBTIPOS: { value: SubtipoAbastecimento; label: string }[] = [
+const SUBTIPOS: readonly { value: SubtipoAbastecimento; label: string }[] = [
   { value: 'diesel', label: 'Diesel' },
   { value: 'arla', label: 'Arla 32' },
 ]
 
 export default function Abastecimento() {
+  const styles = useStyles()
   const viagem = useViagemStore((s) => s.viagem)
   const registrarAbastecimento = useViagemStore((s) => s.registrarAbastecimento)
 
@@ -37,7 +41,8 @@ export default function Abastecimento() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
 
-  // Real-time valorTotal computation
+  // Live total. The driver is standing at the pump comparing this against the
+  // number on its display, so it updates on every keystroke.
   const valorTotalCentavos = useMemo(() => {
     const litros = parseFloat(litrosInput.replace(',', '.'))
     const preco = parseFloat(precoInput.replace(',', '.'))
@@ -49,10 +54,13 @@ export default function Abastecimento() {
 
   if (!viagem) {
     return (
-      <View className="flex-1 bg-background items-center justify-center px-4">
-        <Text className="text-gray-400 text-center">
-          Nenhuma viagem em andamento.
-        </Text>
+      <View style={styles.screen}>
+        <TopAppBar title="Abastecimento" onBack={() => router.back()} />
+        <EmptyState
+          icon="water-outline"
+          title="Nenhuma viagem aberta"
+          description="O abastecimento entra sempre numa viagem. Abra a viagem antes de registrar."
+        />
       </View>
     )
   }
@@ -66,15 +74,15 @@ export default function Abastecimento() {
     const preco = parseFloat(precoInput.replace(',', '.'))
 
     if (isNaN(litros) || litros <= 0) {
-      next.litros = 'Informe a quantidade de litros (deve ser maior que 0).'
+      next.litros = 'Digite quantos litros entraram, como está na bomba.'
     }
     if (isNaN(preco) || preco <= 0) {
-      next.preco = 'Informe o preço por litro (deve ser maior que 0).'
+      next.preco = 'Digite o preço do litro. Use vírgula, ex: 6,50.'
     }
     if (kmAtualInput.trim() !== '') {
       const km = parseInt(kmAtualInput, 10)
       if (isNaN(km) || km <= 0) {
-        next.kmAtual = 'KM atual deve ser um número inteiro positivo.'
+        next.kmAtual = 'Digite só os números do km, sem ponto.'
       }
     }
 
@@ -86,16 +94,12 @@ export default function Abastecimento() {
     if (!validate()) return
     setSubmitting(true)
     try {
-      const litros = parseFloat(litrosInput.replace(',', '.'))
-      const precoPorLitro = parseFloat(precoInput.replace(',', '.'))
-      const kmAtual = kmAtualInput.trim() !== '' ? parseInt(kmAtualInput, 10) : undefined
-
       registrarAbastecimento({
         subtipo,
-        litros,
-        precoPorLitro,
+        litros: parseFloat(litrosInput.replace(',', '.')),
+        precoPorLitro: parseFloat(precoInput.replace(',', '.')),
         local: local.trim() !== '' ? local.trim() : undefined,
-        kmAtual,
+        kmAtual: kmAtualInput.trim() !== '' ? parseInt(kmAtualInput, 10) : undefined,
         fotoUrl: fotoStoragePath ?? undefined,
       })
 
@@ -109,104 +113,125 @@ export default function Abastecimento() {
   }
 
   return (
-    <ScrollView
-      className="flex-1 bg-background"
-      contentContainerClassName="px-4 py-6 gap-4"
-      keyboardShouldPersistTaps="handled"
-    >
-      <Text className="text-white text-2xl font-bold">Registrar Abastecimento</Text>
+    <View style={styles.screen}>
+      <TopAppBar title="Abastecimento" onBack={() => router.back()} />
 
-      {/* Subtipo toggle */}
-      <View className="gap-2">
-        <Text className="text-sm text-gray-400 font-medium">Tipo de combustível</Text>
-        <View className="flex-row gap-3">
-          {SUBTIPOS.map((opt) => (
-            <Pressable
-              key={opt.value}
-              onPress={() => setSubtipo(opt.value)}
-              className={`flex-1 min-h-[44px] rounded-xl border items-center justify-center ${
-                subtipo === opt.value
-                  ? 'bg-primary border-primary'
-                  : 'bg-surface border-surface'
-              }`}
-            >
-              <Text
-                className={`font-semibold text-base ${
-                  subtipo === opt.value ? 'text-black' : 'text-white'
-                }`}
-              >
-                {opt.label}
-              </Text>
-            </Pressable>
-          ))}
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <SegmentedButtons
+          label="O que entrou no tanque"
+          segments={SUBTIPOS}
+          value={subtipo}
+          onChange={setSubtipo}
+        />
+
+        <TextField
+          label="Litros"
+          value={litrosInput}
+          onChangeText={setLitrosInput}
+          keyboardType="decimal-pad"
+          placeholder="180"
+          suffix="L"
+          error={errors.litros}
+        />
+
+        <TextField
+          label="Preço do litro"
+          value={precoInput}
+          onChangeText={setPrecoInput}
+          keyboardType="decimal-pad"
+          placeholder="6,50"
+          suffix="R$"
+          error={errors.preco}
+        />
+
+        {/* The total the app computed, for the driver to check against the pump
+            before he commits. It is never an input: one rounding point only. */}
+        <Surface
+          level={valorTotalCentavos != null ? 2 : 1}
+          padding="lg"
+          style={styles.total}
+        >
+          <Text role="titleMedium" tone="variant">
+            Total a pagar
+          </Text>
+          <Text
+            role="figureLarge"
+            tone={valorTotalCentavos != null ? 'strong' : 'faint'}
+          >
+            {valorTotalCentavos != null ? formatReais(valorTotalCentavos) : '—'}
+          </Text>
+          <Text role="bodySmall" tone="faint">
+            {valorTotalCentavos != null
+              ? 'Confira com o visor da bomba antes de registrar.'
+              : 'Preencha litros e preço para ver o total.'}
+          </Text>
+        </Surface>
+
+        <TextField
+          label="Posto"
+          value={local}
+          onChangeText={setLocal}
+          placeholder="Ex: Posto BR km 210"
+          hint="Opcional."
+        />
+
+        <TextField
+          label="Km do painel"
+          value={kmAtualInput}
+          onChangeText={setKmAtualInput}
+          keyboardType="number-pad"
+          placeholder="121500"
+          suffix="km"
+          hint="Opcional — é o que permite calcular a média do diesel."
+          error={errors.kmAtual}
+        />
+
+        <FotoNota
+          frotaId={frotaId}
+          freteId={freteId}
+          storagePath={fotoStoragePath}
+          onFoto={setFotoStoragePath}
+        />
+
+        <View style={styles.actions}>
+          <Button
+            label="Registrar abastecimento"
+            icon="checkmark"
+            onPress={handleSubmit}
+            loading={submitting}
+            prominent
+          />
+          <Button
+            label="Cancelar"
+            onPress={() => router.back()}
+            variant="outlined"
+            disabled={submitting}
+          />
         </View>
-      </View>
-
-      <Input
-        label="Litros abastecidos"
-        value={litrosInput}
-        onChangeText={setLitrosInput}
-        keyboardType="decimal-pad"
-        placeholder="Ex: 80,00"
-        error={errors.litros}
-      />
-
-      <Input
-        label="Preço por litro (R$)"
-        value={precoInput}
-        onChangeText={setPrecoInput}
-        keyboardType="decimal-pad"
-        placeholder="Ex: 6,50"
-        error={errors.preco}
-      />
-
-      {/* Real-time total */}
-      {valorTotalCentavos !== null && (
-        <Card>
-          <View className="flex-row items-center justify-between">
-            <Text className="text-gray-400 text-sm">Total calculado</Text>
-            <Text className="text-primary font-bold text-lg">
-              {centavosToReais(valorTotalCentavos)}
-            </Text>
-          </View>
-        </Card>
-      )}
-
-      <Input
-        label="Posto / Local (opcional)"
-        value={local}
-        onChangeText={setLocal}
-        placeholder="Ex: Posto BR Km 210"
-      />
-
-      <Input
-        label="KM atual (opcional)"
-        value={kmAtualInput}
-        onChangeText={setKmAtualInput}
-        keyboardType="number-pad"
-        placeholder="Ex: 12500"
-        error={errors.kmAtual}
-      />
-
-      <FotoNota
-        frotaId={frotaId}
-        freteId={freteId}
-        storagePath={fotoStoragePath}
-        onFoto={setFotoStoragePath}
-      />
-
-      <Button
-        label="Registrar abastecimento"
-        onPress={handleSubmit}
-        loading={submitting}
-      />
-
-      <Button
-        label="Cancelar"
-        onPress={() => router.back()}
-        variant="secondary"
-        disabled={submitting}
-      />
-    </ScrollView>
+      </ScrollView>
+    </View>
   )
 }
+
+const useStyles = makeStyles(({ colors }) => ({
+  screen: {
+    flex: 1,
+    backgroundColor: colors.surface,
+  },
+  content: {
+    paddingHorizontal: space.base,
+    paddingBottom: space.xxxl,
+    gap: space.lg,
+  },
+  total: {
+    gap: space.xs,
+  },
+  actions: {
+    gap: space.md,
+    marginTop: space.sm,
+  },
+}))

@@ -1,75 +1,183 @@
 // components/ui/Button.tsx
-// NativeWind v4 styled button component.
-// min-h-[44px] ensures touch targets meet the ≥ 44 px requirement (constitution M-Touch).
+// M3 button, in the four variants the app actually uses.
+//
+//   filled    the one primary action on a screen — never two on the same screen
+//   tonal     a secondary action of real weight (Abastecer, Lançar despesa)
+//   outlined  a reversible alternative (Cancelar)
+//   text      a low-stakes inline action
+//
+// Every variant ships default, pressed, disabled and loading. Android ripple
+// is left to the platform rather than reimplemented with opacity, because a
+// fluent Android user reads its absence as a broken control.
+//
+// The press also scales the control down a hair on a spring. That is not
+// decoration: on this hardware the ripple can take a frame or two to appear,
+// and the driver — gloved, in sun, not looking closely — needs the control to
+// answer his thumb immediately. The scale is on the UI thread, so it answers
+// even while the JS thread is busy committing the record he just tapped.
+//
+// `label` is required and never optional: PRODUCT.md records that this app's
+// driver has low smartphone familiarity, so an icon-only button is not
+// available vocabulary here. The icon may only ever accompany a written label.
 
-import { Pressable, Text, ActivityIndicator } from 'react-native'
+import { Pressable, ActivityIndicator, View, ViewStyle } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
+import * as Haptics from 'expo-haptics'
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated'
+import { Text } from './Text'
+import { shape, space, touch, type ColorRoles } from '../../lib/theme'
+import { makeStyles, useTheme } from '../../lib/theme/ThemeProvider'
+import { PRESS_SCALE, settle } from '../../lib/theme/motion'
 
-type ButtonVariant = 'primary' | 'secondary' | 'destructive'
+type Variant = 'filled' | 'tonal' | 'outlined' | 'text'
+type IoniconName = keyof typeof Ionicons.glyphMap
 
-interface ButtonProps {
+export interface ButtonProps {
   label: string
   onPress: () => void
-  variant?: ButtonVariant
+  variant?: Variant
+  /** Optional leading icon. Decorative — the label carries the meaning. */
+  icon?: IoniconName
   disabled?: boolean
   loading?: boolean
+  /** Destructive actions take the error roles regardless of variant. */
+  destructive?: boolean
+  /** 56dp instead of 48dp, for the single primary action on a screen. */
+  prominent?: boolean
+  /** Layout only — margins, alignment. The control owns its own fill and shape. */
+  style?: ViewStyle
 }
 
-const inlineVariantStyles: Record<ButtonVariant, { container: object; text: object }> = {
-  primary: {
-    container: { backgroundColor: '#22C55E' },
-    text: { color: '#000', fontWeight: '600' as const },
-  },
-  secondary: {
-    container: { backgroundColor: '#161616', borderWidth: 1, borderColor: '#1f1f1f' },
-    text: { color: '#fff', fontWeight: '600' as const },
-  },
-  destructive: {
-    container: { backgroundColor: '#ef4444' },
-    text: { color: '#fff', fontWeight: '600' as const },
-  },
+interface VariantColors {
+  background: string
+  content: string
+  border?: string
+  ripple: string
 }
 
-const nativewindVariantStyles: Record<ButtonVariant, { container: string; text: string }> = {
-  primary: {
-    container: 'bg-primary active:opacity-80',
-    text: 'text-black font-semibold',
-  },
-  secondary: {
-    container: 'bg-surface border border-surface active:opacity-80',
-    text: 'text-white font-semibold',
-  },
-  destructive: {
-    container: 'bg-red-600 active:opacity-80',
-    text: 'text-white font-semibold',
-  },
+function resolveColors(
+  variant: Variant,
+  destructive: boolean,
+  colors: ColorRoles,
+): VariantColors {
+  if (destructive) {
+    switch (variant) {
+      case 'filled':
+        return { background: colors.errorContainer, content: colors.onErrorContainer, ripple: colors.error }
+      case 'tonal':
+        return { background: colors.surfaceContainerHigh, content: colors.error, ripple: colors.error }
+      case 'outlined':
+        return { background: 'transparent', content: colors.error, border: colors.error, ripple: colors.error }
+      default:
+        return { background: 'transparent', content: colors.error, ripple: colors.error }
+    }
+  }
+  switch (variant) {
+    case 'filled':
+      return { background: colors.primaryFill, content: colors.onPrimaryFill, ripple: colors.onPrimaryFill }
+    case 'tonal':
+      return { background: colors.primaryContainer, content: colors.onPrimaryContainer, ripple: colors.primary }
+    case 'outlined':
+      return { background: 'transparent', content: colors.onSurface, border: colors.outline, ripple: colors.primary }
+    default:
+      return { background: 'transparent', content: colors.primary, ripple: colors.primary }
+  }
 }
 
 export function Button({
   label,
   onPress,
-  variant = 'primary',
+  variant = 'filled',
+  icon,
   disabled = false,
   loading = false,
+  destructive = false,
+  prominent = false,
+  style,
 }: ButtonProps) {
-  const { container: containerClass, text: textClass } = nativewindVariantStyles[variant]
-  const { container: containerStyle, text: textStyle } = inlineVariantStyles[variant]
+  const { colors } = useTheme()
+  const styles = useStyles()
+  const inactive = disabled || loading
+  const c = resolveColors(variant, destructive, colors)
+
+  const scale = useSharedValue(1)
+  const animated = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }))
+
+  function handlePress() {
+    // A committed record is a physical event; the driver is often not looking
+    // at the screen when his thumb lands.
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {})
+    onPress()
+  }
 
   return (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled || loading}
-      style={[
-        { minHeight: 44, borderRadius: 12, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
-        containerStyle,
-        (disabled || loading) ? { opacity: 0.5 } : {},
-      ]}
-      className={`min-h-[44px] rounded-xl px-4 items-center justify-center ${containerClass} ${disabled || loading ? 'opacity-50' : ''}`}
-    >
-      {loading ? (
-        <ActivityIndicator color={variant === 'primary' ? '#000' : '#fff'} />
-      ) : (
-        <Text style={[{ fontSize: 16 }, textStyle]} className={`text-base ${textClass}`}>{label}</Text>
-      )}
-    </Pressable>
+    <Animated.View style={[animated, inactive && styles.inactive, style]}>
+      <Pressable
+        onPress={handlePress}
+        onPressIn={() => {
+          scale.value = withSpring(PRESS_SCALE, settle)
+        }}
+        onPressOut={() => {
+          scale.value = withSpring(1, settle)
+        }}
+        disabled={inactive}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityState={{ disabled: inactive, busy: loading }}
+        android_ripple={inactive ? undefined : { color: c.ripple, borderless: false }}
+        style={[
+          styles.base,
+          {
+            minHeight: prominent ? touch.actionHeight : touch.min,
+            backgroundColor: c.background,
+          },
+          c.border != null && { borderWidth: 1, borderColor: c.border },
+        ]}
+      >
+        {loading ? (
+          <ActivityIndicator color={c.content} />
+        ) : (
+          <View style={styles.row}>
+            {icon != null && (
+              <Ionicons name={icon} size={20} color={c.content} accessible={false} />
+            )}
+            <Text
+              role="labelLarge"
+              numberOfLines={1}
+              style={[styles.label, { color: c.content }]}
+            >
+              {label}
+            </Text>
+          </View>
+        )}
+      </Pressable>
+    </Animated.View>
   )
 }
+
+const useStyles = makeStyles(() => ({
+  base: {
+    borderRadius: shape.full,
+    paddingHorizontal: space.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+  },
+  label: {
+    textAlign: 'center',
+  },
+  inactive: {
+    // M3 disabled: 12% container, 38% content. Opacity on the whole control is
+    // the honest approximation in RN and keeps the label legible at 38%.
+    opacity: 0.38,
+  },
+}))

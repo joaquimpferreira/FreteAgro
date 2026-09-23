@@ -1,29 +1,27 @@
 // components/viagem/ViagemResumo.tsx
-// Aggregated trip summary: all legs + km totals + total expenses.
-// Used in encerrar.tsx (confirmation) and resumo.tsx (read-only).
-// Layer: components — imports from @fretagro/types, lib/viagem, and ui only.
+// Aggregated trip summary: every leg, km totals, expense totals.
+// Used by encerrar.tsx (as the confirmation the driver reads before the trip
+// becomes immutable) and resumo.tsx (read-only, after).
+// Layer: components — imports from @fretagro/types, lib/ and components/ui only.
 
-import { View, Text, ScrollView } from 'react-native'
+import { View, StyleSheet } from 'react-native'
 import type { TrechoKm, Abastecimento, Lancamento } from '@fretagro/types'
+import { Text } from '../ui/Text'
+import { Surface } from '../ui/Surface'
+import { DataRow } from '../ui/DataRow'
+import { TrechoCard } from './TrechoCard'
 import {
   kmTotalVazio,
   kmTotalCarregado,
   kmTotalViagem,
 } from '../../lib/viagem/calcularViagem'
-import { TrechoCard } from './TrechoCard'
-import { Card } from '../ui/Card'
+import { formatKm, formatReais } from '../../lib/utils/format'
+import { space } from '../../lib/theme'
 
 interface ViagemResumoProps {
   trechos: TrechoKm[]
   abastecimentos: Abastecimento[]
   despesas: Lancamento[]
-}
-
-function formatReal(centavos: number): string {
-  return (centavos / 100).toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  })
 }
 
 export function ViagemResumo({ trechos, abastecimentos, despesas }: ViagemResumoProps) {
@@ -32,68 +30,68 @@ export function ViagemResumo({ trechos, abastecimentos, despesas }: ViagemResumo
   const totalGeral = totalAbastecimentos + totalDespesas
 
   return (
-    <View className="gap-4">
-      {/* Leg list */}
-      <View className="gap-2">
-        {trechos.map((t, idx) => (
-          <TrechoCard
-            key={t.id}
-            trecho={t}
-            abastecimentos={abastecimentos}
-            numero={idx + 1}
-          />
-        ))}
+    <View style={styles.container}>
+      <View style={styles.section}>
+        <Text role="titleMedium" tone="variant">
+          Trechos
+        </Text>
+        <View style={styles.legs}>
+          {trechos.map((t, idx) => (
+            <TrechoCard
+              key={t.id}
+              trecho={t}
+              abastecimentos={abastecimentos}
+              numero={idx + 1}
+            />
+          ))}
+        </View>
       </View>
 
-      {/* Km totals */}
-      <Card>
-        <Text className="text-white font-semibold text-base mb-3">Km da viagem</Text>
-        <View className="gap-2">
-          <View className="flex-row justify-between">
-            <Text className="text-gray-400 text-sm">Km vazio</Text>
-            <Text className="text-white text-sm font-medium">
-              {kmTotalVazio(trechos).toLocaleString('pt-BR')} km
-            </Text>
-          </View>
-          <View className="flex-row justify-between">
-            <Text className="text-gray-400 text-sm">Km carregado</Text>
-            <Text className="text-white text-sm font-medium">
-              {kmTotalCarregado(trechos).toLocaleString('pt-BR')} km
-            </Text>
-          </View>
-          <View className="flex-row justify-between border-t border-surface mt-1 pt-2">
-            <Text className="text-white text-sm font-semibold">Total</Text>
-            <Text className="text-green-400 text-sm font-semibold">
-              {kmTotalViagem(trechos).toLocaleString('pt-BR')} km
-            </Text>
-          </View>
+      <Surface level={1} padding="lg" style={styles.card}>
+        <Text role="titleMedium">Km da viagem</Text>
+        <View style={styles.rows}>
+          <DataRow label="Vazio" value={formatKm(kmTotalVazio(trechos))} />
+          <DataRow label="Carregado" value={formatKm(kmTotalCarregado(trechos))} />
+          <DataRow
+            label="Total rodado"
+            value={formatKm(kmTotalViagem(trechos))}
+            emphasis="positive"
+            divided
+          />
         </View>
-      </Card>
+      </Surface>
 
-      {/* Expense totals */}
-      <Card>
-        <Text className="text-white font-semibold text-base mb-3">Despesas</Text>
-        <View className="gap-2">
-          <View className="flex-row justify-between">
-            <Text className="text-gray-400 text-sm">Abastecimentos</Text>
-            <Text className="text-white text-sm font-medium">
-              {formatReal(totalAbastecimentos)}
-            </Text>
-          </View>
-          <View className="flex-row justify-between">
-            <Text className="text-gray-400 text-sm">Outras despesas</Text>
-            <Text className="text-white text-sm font-medium">
-              {formatReal(totalDespesas)}
-            </Text>
-          </View>
-          <View className="flex-row justify-between border-t border-surface mt-1 pt-2">
-            <Text className="text-white text-sm font-semibold">Total</Text>
-            <Text className="text-red-400 text-sm font-semibold">
-              {formatReal(totalGeral)}
-            </Text>
-          </View>
+      <Surface level={1} padding="lg" style={styles.card}>
+        <Text role="titleMedium">Despesas da viagem</Text>
+        <View style={styles.rows}>
+          <DataRow label="Abastecimentos" value={formatReais(totalAbastecimentos)} />
+          <DataRow label="Outras despesas" value={formatReais(totalDespesas)} />
+          <DataRow
+            label="Total"
+            value={formatReais(totalGeral)}
+            emphasis="negative"
+            divided
+          />
         </View>
-      </Card>
+      </Surface>
     </View>
   )
 }
+
+const styles = StyleSheet.create({
+  container: {
+    gap: space.base,
+  },
+  section: {
+    gap: space.md,
+  },
+  legs: {
+    gap: space.sm,
+  },
+  card: {
+    gap: space.base,
+  },
+  rows: {
+    gap: space.sm,
+  },
+})

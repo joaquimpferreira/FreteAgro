@@ -8,11 +8,21 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/icon.png',
-  userInterfaceStyle: 'dark',
+  // The app follows the system appearance (lib/theme/ThemeProvider). Without
+  // this, `useColorScheme()` is pinned to whatever is declared here and the
+  // dark scheme can never be reached.
+  userInterfaceStyle: 'automatic',
   splash: {
     image: './assets/splash.png',
     resizeMode: 'contain',
-    backgroundColor: '#0D0D0D',
+    // Matches `colors.surface` on the light scheme, so the splash hands over to
+    // the first screen without a flash of a different background.
+    backgroundColor: '#f4f6f4',
+    dark: {
+      image: './assets/splash.png',
+      resizeMode: 'contain',
+      backgroundColor: '#0f1311',
+    },
   },
   scheme: 'fretagroapp',
   android: {

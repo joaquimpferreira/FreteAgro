@@ -1,20 +1,27 @@
 // components/despesas/DespesaItem.tsx
-// Read-only expense/refuel row for history display.
-// Handles both Lancamento (general expense) and Abastecimento (fuel refuel).
-// Optional receipt photo thumbnail: rendered only when fotoUrl (storage path) is present
-// and a signed URL has been resolved by the parent for display (private bucket).
+// Read-only expense or refuel row, for trip history.
+// Handles both Lancamento (general expense) and Abastecimento (fuel).
+//
+// The per-type color coding this row used to carry is gone. It assigned five
+// different hues to expense types on a screen read in direct sun, where the
+// driver cannot reliably tell them apart and where hue meant nothing anyway —
+// a pedágio is not "muted" and an oficina is not "destructive". The type is
+// now a written chip, and the only figure that carries color is the money.
+//
+// The receipt thumbnail renders only when the parent has resolved a signed URL
+// for the storage path (private bucket).
+//
 // Layer: components — imports from components/ui and @fretagro/types only.
 
-import { View, Text, Image } from 'react-native'
+import { View, Image } from 'react-native'
 import type { TipoLancamento, SubtipoAbastecimento } from '@fretagro/types'
-import { Badge } from '../ui/Badge'
-import { Card } from '../ui/Card'
+import { Text } from '../ui/Text'
+import { Chip } from '../ui/Chip'
+import { Surface } from '../ui/Surface'
+import { formatLitros, formatPrecoLitro, formatReais } from '../../lib/utils/format'
+import { shape, space } from '../../lib/theme'
+import { makeStyles } from '../../lib/theme/ThemeProvider'
 
-type BadgeVariant = 'default' | 'success' | 'warning' | 'destructive' | 'muted'
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Label maps
-// ─────────────────────────────────────────────────────────────────────────────
 const LANCAMENTO_LABELS: Record<TipoLancamento, string> = {
   combustivel: 'Combustível',
   borracharia: 'Borracharia',
@@ -29,41 +36,18 @@ const LANCAMENTO_LABELS: Record<TipoLancamento, string> = {
   outro: 'Outro',
 }
 
-const LANCAMENTO_VARIANT: Record<TipoLancamento, BadgeVariant> = {
-  combustivel: 'warning',
-  borracharia: 'destructive',
-  patio: 'muted',
-  pedagio: 'muted',
-  oficina: 'destructive',
-  vale: 'default',
-  adiantamento: 'default',
-  salario: 'success',
-  ipva: 'muted',
-  seguro: 'muted',
-  outro: 'default',
-}
-
 const SUBTIPO_LABELS: Record<SubtipoAbastecimento, string> = {
   diesel: 'Diesel',
   arla: 'Arla 32',
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────────────────────
-function centavosToReais(centavos: number): string {
-  return (centavos / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Props
-// ─────────────────────────────────────────────────────────────────────────────
 interface DespesaItemBase {
-  valor: number // centavos
+  /** Centavos. */
+  valor: number
   descricao?: string
   /**
    * Signed URL resolved at display time by the parent screen.
-   * NOT a raw storage path (private bucket — paths must be converted via createSignedUrl).
+   * NOT a raw storage path — the bucket is private.
    */
   signedPhotoUrl?: string | null
 }
@@ -82,48 +66,65 @@ interface AbastecimentoItem extends DespesaItemBase {
 
 export type DespesaItemProps = LancamentoItem | AbastecimentoItem
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Component
-// ─────────────────────────────────────────────────────────────────────────────
 export function DespesaItem(props: DespesaItemProps) {
+  const styles = useStyles()
   const { valor, descricao, signedPhotoUrl } = props
 
-  const badgeLabel =
+  const label =
     props.kind === 'abastecimento'
       ? SUBTIPO_LABELS[props.subtipo]
       : LANCAMENTO_LABELS[props.tipo]
 
-  const badgeVariant: BadgeVariant =
-    props.kind === 'abastecimento' ? 'warning' : LANCAMENTO_VARIANT[props.tipo]
-
   return (
-    <Card className="gap-3">
-      <View className="flex-row items-center justify-between">
-        <View className="flex-row items-center gap-2 flex-1">
-          <Badge label={badgeLabel} variant={badgeVariant} />
-          {props.kind === 'abastecimento' && (
-            <Text className="text-gray-400 text-xs">
-              {props.litros.toFixed(2)} L × R${props.precoPorLitro.toFixed(3)}/L
-            </Text>
-          )}
-        </View>
-        <Text className="text-white font-semibold text-base">
-          {centavosToReais(valor)}
-        </Text>
+    <Surface level={1} radius="medium" padding="base" style={styles.card}>
+      <View style={styles.header}>
+        <Chip
+          label={label}
+          tone="neutral"
+          icon={props.kind === 'abastecimento' ? 'water-outline' : 'receipt-outline'}
+        />
+        <Text role="figureSmall">{formatReais(valor)}</Text>
       </View>
 
-      {descricao ? (
-        <Text className="text-gray-400 text-sm">{descricao}</Text>
-      ) : null}
+      {props.kind === 'abastecimento' && (
+        <Text role="bodySmall" tone="variant">
+          {formatLitros(props.litros)} × {formatPrecoLitro(props.precoPorLitro)}
+        </Text>
+      )}
 
-      {signedPhotoUrl ? (
+      {descricao != null && descricao !== '' && (
+        <Text role="bodyMedium" tone="variant">
+          {descricao}
+        </Text>
+      )}
+
+      {signedPhotoUrl != null && (
         <Image
           source={{ uri: signedPhotoUrl }}
-          className="w-full rounded-xl"
-          style={{ height: 140 }}
+          style={styles.photo}
           resizeMode="cover"
+          accessibilityLabel={`Foto da nota de ${label}`}
         />
-      ) : null}
-    </Card>
+      )}
+    </Surface>
   )
 }
+
+const useStyles = makeStyles(({ colors }) => ({
+  card: {
+    gap: space.sm,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: space.md,
+  },
+  photo: {
+    width: '100%',
+    height: 160,
+    borderRadius: shape.small,
+    backgroundColor: colors.surfaceContainerHigh,
+    marginTop: space.xs,
+  },
+}))

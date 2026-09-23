@@ -1,19 +1,34 @@
 // app/(app)/viagem/avancar-trecho.tsx
-// Advance Leg screen — closes the current leg and opens the next one.
-// Validates kmFinal > current leg kmInicial before submitting.
+// Advance Leg — closes the open leg and opens the next one.
+// Validates kmFinal > the open leg's kmInicial before submitting.
 // Layer: app — imports from store/ and components/ only.
 
 import { useState } from 'react'
-import { View, Text, ScrollView, Alert } from 'react-native'
+import { View, ScrollView, Alert } from 'react-native'
 import { router } from 'expo-router'
 import * as Haptics from 'expo-haptics'
 import { useViagemStore } from '../../../store/viagemStore'
 import type { TipoTrecho } from '@fretagro/types'
+import { Text } from '../../../components/ui/Text'
 import { Button } from '../../../components/ui/Button'
-import { Input } from '../../../components/ui/Input'
-import { Card } from '../../../components/ui/Card'
+import { TextField } from '../../../components/ui/TextField'
+import { Surface } from '../../../components/ui/Surface'
+import { Chip } from '../../../components/ui/Chip'
+import { DataRow } from '../../../components/ui/DataRow'
+import { SegmentedButtons } from '../../../components/ui/SegmentedButtons'
+import { TopAppBar } from '../../../components/ui/TopAppBar'
+import { EmptyState } from '../../../components/ui/EmptyState'
+import { formatKm } from '../../../lib/utils/format'
+import { space } from '../../../lib/theme'
+import { makeStyles } from '../../../lib/theme/ThemeProvider'
+
+const TIPOS: readonly { value: TipoTrecho; label: string }[] = [
+  { value: 'vazio', label: 'Vazio' },
+  { value: 'carregado', label: 'Carregado' },
+]
 
 export default function AvancarTrecho() {
+  const styles = useStyles()
   const viagem = useViagemStore((s) => s.viagem)
   const avancarTrecho = useViagemStore((s) => s.avancarTrecho)
 
@@ -24,23 +39,29 @@ export default function AvancarTrecho() {
 
   if (!viagem) {
     return (
-      <View className="flex-1 bg-background items-center justify-center px-4">
-        <Text className="text-gray-400">Nenhuma viagem em andamento.</Text>
+      <View style={styles.screen}>
+        <TopAppBar title="Avançar trecho" onBack={() => router.back()} />
+        <EmptyState
+          icon="car-outline"
+          title="Nenhuma viagem aberta"
+          description="Não há trecho para avançar. Abra uma viagem primeiro."
+        />
       </View>
     )
   }
 
   const trechoAtual = viagem.trechos[viagem.trechoAtualIndex]
+  const carregado = trechoAtual.tipo === 'carregado'
 
   function validate(): boolean {
     const kmFinalNum = parseInt(kmFinalInput, 10)
     if (!kmFinalInput.trim() || isNaN(kmFinalNum)) {
-      setKmFinalError('Informe o km final.')
+      setKmFinalError('Leia o km no painel e digite só os números.')
       return false
     }
     if (kmFinalNum <= trechoAtual.kmInicial) {
       setKmFinalError(
-        `Km final deve ser maior que o km inicial (${trechoAtual.kmInicial.toLocaleString('pt-BR')} km).`,
+        `O km de chegada precisa ser maior que o de saída (${formatKm(trechoAtual.kmInicial)}). Confira o número.`,
       )
       return false
     }
@@ -55,72 +76,108 @@ export default function AvancarTrecho() {
     const kmFinalNum = parseInt(kmFinalInput, 10)
 
     try {
-      // avancarTrecho closes current leg AND opens the next one
+      // avancarTrecho closes the current leg AND opens the next one.
       avancarTrecho(kmFinalNum, tipoProximo, kmFinalNum)
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
       router.replace('/(app)/viagem/em-curso')
-    } catch (err: any) {
-      Alert.alert('Erro', err?.message ?? 'Não foi possível avançar o trecho.')
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : 'Não foi possível avançar o trecho. Tente novamente.'
+      Alert.alert('Erro', message)
     } finally {
       setSubmitting(false)
     }
   }
 
+  const kmDigitado = parseInt(kmFinalInput, 10)
+  const rodado =
+    !isNaN(kmDigitado) && kmDigitado > trechoAtual.kmInicial
+      ? kmDigitado - trechoAtual.kmInicial
+      : null
+
   return (
-    <ScrollView
-      className="flex-1 bg-background"
-      contentContainerClassName="px-4 py-6 gap-4"
-    >
-      <Text className="text-white text-2xl font-bold">Avançar trecho</Text>
+    <View style={styles.screen}>
+      <TopAppBar title="Avançar trecho" onBack={() => router.back()} />
 
-      {/* Current leg info */}
-      <Card>
-        <Text className="text-gray-400 text-sm">Trecho atual</Text>
-        <Text className="text-white text-base font-semibold mt-1">
-          {trechoAtual.tipo === 'vazio' ? 'Vazio' : 'Carregado'} — Km inicial:{' '}
-          {trechoAtual.kmInicial.toLocaleString('pt-BR')} km
-        </Text>
-      </Card>
-
-      <Input
-        label="Km final deste trecho"
-        value={kmFinalInput}
-        onChangeText={(v) => {
-          setKmFinalInput(v)
-          setKmFinalError(undefined)
-        }}
-        placeholder="Ex: 121800"
-        keyboardType="numeric"
-        error={kmFinalError}
-      />
-
-      {/* Next leg tipo picker */}
-      <View className="gap-1">
-        <Text className="text-sm text-gray-400 font-medium">Tipo do próximo trecho</Text>
-        <View className="flex-row gap-3">
-          <View className="flex-1">
-            <Button
-              label="Vazio"
-              onPress={() => setTipoProximo('vazio')}
-              variant={tipoProximo === 'vazio' ? 'primary' : 'secondary'}
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <Surface level={1} padding="lg" style={styles.card}>
+          <View style={styles.header}>
+            <Text role="titleMedium">Fechando este trecho</Text>
+            <Chip
+              label={carregado ? 'Carregado' : 'Vazio'}
+              tone="neutral"
+              icon={carregado ? 'cube' : 'cube-outline'}
             />
           </View>
-          <View className="flex-1">
-            <Button
-              label="Carregado"
-              onPress={() => setTipoProximo('carregado')}
-              variant={tipoProximo === 'carregado' ? 'primary' : 'secondary'}
+          <DataRow label="Km de saída" value={formatKm(trechoAtual.kmInicial)} />
+          {rodado != null && (
+            <DataRow
+              label="Rodado neste trecho"
+              value={formatKm(rodado)}
+              emphasis="positive"
+              divided
             />
-          </View>
-        </View>
-      </View>
+          )}
+        </Surface>
 
-      <Button
-        label="Avançar trecho"
-        onPress={handleSubmit}
-        loading={submitting}
-        variant="primary"
-      />
-    </ScrollView>
+        <TextField
+          label="Km de chegada"
+          value={kmFinalInput}
+          onChangeText={(v) => {
+            setKmFinalInput(v)
+            setKmFinalError(undefined)
+          }}
+          placeholder="121800"
+          keyboardType="number-pad"
+          suffix="km"
+          hint="O número que está no painel agora."
+          error={kmFinalError}
+        />
+
+        <SegmentedButtons
+          label="O próximo trecho sai"
+          segments={TIPOS}
+          value={tipoProximo}
+          onChange={setTipoProximo}
+        />
+
+        <Button
+          label="Avançar trecho"
+          icon="arrow-forward"
+          onPress={handleSubmit}
+          loading={submitting}
+          prominent
+          style={styles.submit}
+        />
+      </ScrollView>
+    </View>
   )
 }
+
+const useStyles = makeStyles(({ colors }) => ({
+  screen: {
+    flex: 1,
+    backgroundColor: colors.surface,
+  },
+  content: {
+    paddingHorizontal: space.base,
+    paddingBottom: space.xxxl,
+    gap: space.lg,
+  },
+  card: {
+    gap: space.md,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: space.md,
+  },
+  submit: {
+    marginTop: space.sm,
+  },
+}))

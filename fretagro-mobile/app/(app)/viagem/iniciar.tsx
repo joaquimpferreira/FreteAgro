@@ -1,21 +1,28 @@
 // app/(app)/viagem/iniciar.tsx
-// Start Trip screen — collects trip details and opens the first vazio leg.
-// Blocks if an active trip already exists (FR-010) or driver has no truck (FR-009).
-// Layer: app — imports from hooks/, components/, lib/auth/, lib/supabase/.
+// Start Trip — collects trip details and opens the first vazio leg.
+// Blocks when an active trip already exists (FR-010) or the driver has no
+// truck linked (FR-009).
+// Layer: app — imports from store/, components/, lib/auth/, lib/supabase/.
 
 import { useState, useCallback } from 'react'
-import { View, Text, ScrollView, Alert } from 'react-native'
+import { View, ScrollView, Alert, ActivityIndicator } from 'react-native'
 import { router, useFocusEffect } from 'expo-router'
 import * as Haptics from 'expo-haptics'
 import { useViagemStore } from '../../../store/viagemStore'
 import { getSession } from '../../../lib/auth/mobileAuth'
 import { supabase } from '../../../lib/supabase/client'
 import type { TipoCarga } from '@fretagro/types'
+import { Text } from '../../../components/ui/Text'
 import { Button } from '../../../components/ui/Button'
-import { Input } from '../../../components/ui/Input'
-import { Card } from '../../../components/ui/Card'
+import { TextField } from '../../../components/ui/TextField'
+import { ChoiceChips } from '../../../components/ui/ChoiceChips'
+import { TopAppBar } from '../../../components/ui/TopAppBar'
+import { EmptyState } from '../../../components/ui/EmptyState'
+import { Banner } from '../../../components/ui/Banner'
+import { space } from '../../../lib/theme'
+import { makeStyles, useTheme } from '../../../lib/theme/ThemeProvider'
 
-const TIPOS_CARGA: { value: TipoCarga; label: string }[] = [
+const TIPOS_CARGA: readonly { value: TipoCarga; label: string }[] = [
   { value: 'grao', label: 'Grão' },
   { value: 'oleo_soja', label: 'Óleo de soja' },
   { value: 'farelo', label: 'Farelo' },
@@ -30,6 +37,8 @@ interface DriverProfile {
 }
 
 export default function IniciarViagem() {
+  const { colors } = useTheme()
+  const styles = useStyles()
   const viagem = useViagemStore((s) => s.viagem)
   const iniciarViagem = useViagemStore((s) => s.iniciarViagem)
 
@@ -52,14 +61,13 @@ export default function IniciarViagem() {
     try {
       const session = await getSession()
       if (!session) {
-        setProfileError('Sessão não encontrada. Faça login novamente.')
+        setProfileError('Sua sessão expirou. Entre novamente para iniciar a viagem.')
         setLoadingProfile(false)
         return
       }
 
       // Column names are camelCase (Prisma does not auto-convert to snake_case
-      // without @map). supabaseUserId / frotaId match the DB exactly.
-      // caminhao is a back-relation (FK is caminhoes.motoristaId), so we embed.
+      // without @map). caminhoes is a back-relation (FK is caminhoes.motoristaId).
       const { data: motorista, error } = await supabase
         .from('motoristas')
         .select('id, frotaId, caminhoes(id)')
@@ -69,104 +77,114 @@ export default function IniciarViagem() {
       if (error) throw error
 
       const caminhoes = motorista.caminhoes as Array<{ id: string }> | null
-      const caminhaoId =
-        Array.isArray(caminhoes) && caminhoes.length > 0
-          ? caminhoes[0].id
-          : null
-
       setProfile({
         motoristaId: motorista.id,
         frotaId: motorista.frotaId,
-        caminhaoId,
+        caminhaoId: Array.isArray(caminhoes) && caminhoes.length > 0 ? caminhoes[0].id : null,
       })
-    } catch (err) {
-      setProfileError('Não foi possível carregar o perfil do motorista.')
+    } catch {
+      setProfileError(
+        'Não foi possível carregar seu perfil. Verifique o sinal e toque em Tentar novamente.',
+      )
     } finally {
       setLoadingProfile(false)
     }
   }, [])
 
-  // Refetch the driver profile every time the screen gains focus so a truck
-  // linked on the web platform is reflected without restarting the app.
+  // Refetch on focus so a truck linked on the web panel shows up without an
+  // app restart.
   useFocusEffect(
     useCallback(() => {
       fetchProfile()
-    }, [fetchProfile])
+    }, [fetchProfile]),
   )
 
-  // FR-010: block if active trip exists
+  // FR-010: an active trip blocks a new one.
   if (viagem) {
     return (
-      <View className="flex-1 bg-background px-4 items-center justify-center">
-        <Card className="items-center gap-4">
-          <Text className="text-white text-lg font-semibold text-center">
-            Viagem em andamento
-          </Text>
-          <Text className="text-gray-400 text-sm text-center">
-            Encerre a viagem atual antes de iniciar uma nova.
-          </Text>
-          <Button
-            label="Ir para viagem atual"
-            onPress={() => router.replace('/(app)/viagem/em-curso')}
-          />
-        </Card>
+      <View style={styles.screen}>
+        <TopAppBar title="Iniciar viagem" onBack={() => router.back()} />
+        <EmptyState
+          icon="alert-circle-outline"
+          title="Você já tem uma viagem aberta"
+          description="Encerre a viagem atual antes de abrir outra. Só pode haver uma por vez."
+          action={{
+            label: 'Ir para a viagem atual',
+            icon: 'arrow-forward',
+            onPress: () => router.replace('/(app)/viagem/em-curso'),
+          }}
+        />
       </View>
     )
   }
 
   if (loadingProfile) {
     return (
-      <View className="flex-1 bg-background items-center justify-center">
-        <Text className="text-gray-400">Carregando perfil…</Text>
+      <View style={styles.screen}>
+        <TopAppBar title="Iniciar viagem" onBack={() => router.back()} />
+        <View style={styles.loading}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text role="bodyMedium" tone="variant">
+            Carregando seu perfil…
+          </Text>
+        </View>
       </View>
     )
   }
 
-  if (profileError) {
+  if (profileError != null) {
     return (
-      <View className="flex-1 bg-background px-4 items-center justify-center">
-        <Text className="text-red-400 text-center">{profileError}</Text>
+      <View style={styles.screen}>
+        <TopAppBar title="Iniciar viagem" onBack={() => router.back()} />
+        <View style={styles.padded}>
+          <Banner
+            message={profileError}
+            action={{ label: 'Tentar novamente', onPress: fetchProfile }}
+          />
+        </View>
       </View>
     )
   }
 
-  // FR-009: block if driver has no truck assigned
-  if (!profile?.caminhaoId) {
+  // FR-009: no truck linked, no trip.
+  if (profile?.caminhaoId == null) {
     return (
-      <View className="flex-1 bg-background px-4 items-center justify-center">
-        <Card className="items-center gap-3">
-          <Text className="text-white text-lg font-semibold text-center">
-            Nenhum caminhão vinculado
-          </Text>
-          <Text className="text-gray-400 text-sm text-center">
-            Solicite ao dono da frota que vincule um caminhão ao seu perfil para poder iniciar viagens.
-          </Text>
-          <Button label="Verificar novamente" onPress={() => fetchProfile()} />
-        </Card>
+      <View style={styles.screen}>
+        <TopAppBar title="Iniciar viagem" onBack={() => router.back()} />
+        <EmptyState
+          icon="bus-outline"
+          title="Nenhum caminhão vinculado"
+          description="Peça ao dono da frota para vincular um caminhão ao seu perfil. Sem isso a viagem não pode ser aberta."
+          action={{
+            label: 'Verificar novamente',
+            icon: 'refresh',
+            onPress: fetchProfile,
+          }}
+        />
       </View>
     )
   }
 
   function validate(): boolean {
-    const nextErrors: Record<string, string> = {}
+    const next: Record<string, string> = {}
 
-    if (!origem.trim()) nextErrors.origem = 'Informe a origem.'
-    if (!destino.trim()) nextErrors.destino = 'Informe o destino.'
+    if (!origem.trim()) next.origem = 'Informe de onde você está saindo.'
+    if (!destino.trim()) next.destino = 'Informe para onde você vai.'
 
     const kmNum = parseInt(kmInicial, 10)
     if (!kmInicial.trim() || isNaN(kmNum) || kmNum <= 0) {
-      nextErrors.kmInicial = 'Km inicial deve ser um número maior que 0.'
+      next.kmInicial = 'Leia o km no painel do caminhão e digite só os números.'
     }
 
     if (valorBrutoInput.trim()) {
       const valorNum = parseFloat(valorBrutoInput.replace(',', '.'))
       if (isNaN(valorNum) || valorNum < 0) {
-        nextErrors.valorBruto = 'Valor da Carta Frete inválido.'
+        next.valorBruto = 'Valor inválido. Use vírgula para os centavos, ex: 8500,00.'
       }
     }
 
-    setErrors(nextErrors)
-    return Object.keys(nextErrors).length === 0
+    setErrors(next)
+    return Object.keys(next).length === 0
   }
 
   async function handleSubmit() {
@@ -177,7 +195,6 @@ export default function IniciarViagem() {
     const valorBrutoReais = valorBrutoInput.trim()
       ? parseFloat(valorBrutoInput.replace(',', '.'))
       : 0
-    const valorBrutoCentavos = Math.round(valorBrutoReais * 100)
 
     try {
       iniciarViagem({
@@ -185,87 +202,114 @@ export default function IniciarViagem() {
         destino: destino.trim(),
         tipoCarga,
         kmInicial: kmNum,
-        valorBruto: valorBrutoCentavos,
+        valorBruto: Math.round(valorBrutoReais * 100),
         caminhaoId: profile.caminhaoId!,
         motoristaId: profile.motoristaId,
         frotaId: profile.frotaId,
       })
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
       router.replace('/(app)/viagem/em-curso')
-    } catch (err: any) {
-      Alert.alert('Erro', err?.message ?? 'Não foi possível iniciar a viagem.')
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : 'Não foi possível abrir a viagem. Tente novamente.'
+      Alert.alert('Erro', message)
     } finally {
       setSubmitting(false)
     }
   }
 
   return (
-    <ScrollView
-      className="flex-1 bg-background"
-      contentContainerClassName="px-4 py-6 gap-4"
-    >
-      <Text className="text-white text-2xl font-bold">Iniciar viagem</Text>
+    <View style={styles.screen}>
+      <TopAppBar title="Iniciar viagem" onBack={() => router.back()} />
 
-      <Input
-        label="Origem"
-        value={origem}
-        onChangeText={setOrigem}
-        placeholder="Ex: Maringá, PR"
-        error={errors.origem}
-      />
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <Text role="bodyMedium" tone="variant">
+          O km de saída é o que garante o seu acerto no final. Confira no painel antes
+          de digitar.
+        </Text>
 
-      <Input
-        label="Destino"
-        value={destino}
-        onChangeText={setDestino}
-        placeholder="Ex: São Paulo, SP"
-        error={errors.destino}
-      />
+        <TextField
+          label="Saindo de"
+          value={origem}
+          onChangeText={setOrigem}
+          placeholder="Ex: Sorriso, MT"
+          error={errors.origem}
+        />
 
-      {/* Tipo de carga picker */}
-      <View className="gap-1">
-        <Text className="text-sm text-gray-400 font-medium">Tipo de carga</Text>
-        <View className="flex-row flex-wrap gap-2">
-          {TIPOS_CARGA.map((tc) => (
-            <Button
-              key={tc.value}
-              label={tc.label}
-              onPress={() => setTipoCarga(tc.value)}
-              variant={tipoCarga === tc.value ? 'primary' : 'secondary'}
-            />
-          ))}
-        </View>
-      </View>
+        <TextField
+          label="Indo para"
+          value={destino}
+          onChangeText={setDestino}
+          placeholder="Ex: Rondonópolis, MT"
+          error={errors.destino}
+        />
 
-      <Input
-        label="Km inicial"
-        value={kmInicial}
-        onChangeText={setKmInicial}
-        placeholder="Ex: 120500"
-        keyboardType="numeric"
-        error={errors.kmInicial}
-      />
+        <ChoiceChips
+          label="Tipo de carga"
+          choices={TIPOS_CARGA}
+          value={tipoCarga}
+          onChange={setTipoCarga}
+        />
 
-      <View className="gap-1">
-        <Input
-          label="Valor da Carta Frete (R$)"
+        <TextField
+          label="Km de saída"
+          value={kmInicial}
+          onChangeText={setKmInicial}
+          placeholder="120500"
+          keyboardType="number-pad"
+          suffix="km"
+          hint="O número que está no painel agora."
+          error={errors.kmInicial}
+        />
+
+        <TextField
+          label="Valor da Carta Frete"
           value={valorBrutoInput}
           onChangeText={setValorBrutoInput}
           placeholder="0,00"
           keyboardType="decimal-pad"
+          suffix="R$"
+          hint="Deixe em branco se ainda não souber."
           error={errors.valorBruto}
         />
-        <Text className="text-xs text-gray-500">
-          Valor da Carta Frete. Deixe em branco para R$ 0,00.
-        </Text>
-      </View>
 
-      <Button
-        label="Iniciar viagem"
-        onPress={handleSubmit}
-        loading={submitting}
-        variant="primary"
-      />
-    </ScrollView>
+        <Button
+          label="Abrir viagem"
+          icon="play"
+          onPress={handleSubmit}
+          loading={submitting}
+          prominent
+          style={styles.submit}
+        />
+      </ScrollView>
+    </View>
   )
 }
+
+const useStyles = makeStyles(({ colors }) => ({
+  screen: {
+    flex: 1,
+    backgroundColor: colors.surface,
+  },
+  content: {
+    paddingHorizontal: space.base,
+    paddingBottom: space.xxxl,
+    gap: space.lg,
+  },
+  loading: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: space.base,
+  },
+  padded: {
+    padding: space.base,
+  },
+  submit: {
+    marginTop: space.sm,
+  },
+}))

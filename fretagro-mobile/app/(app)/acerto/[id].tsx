@@ -1,87 +1,39 @@
 // app/(app)/acerto/[id].tsx
-// US6: Acerto detail screen — full settlement breakdown + optional receipt image.
+// US6: settlement detail — the full breakdown, and the receipt when there is one.
 //
-// comprovanteUrl stored in DB is a private Supabase Storage path (e.g.
-// 'comprovantes/{motoristaId}/{uuid}.pdf'). A signed URL is generated at render
-// time via supabase.storage.from('comprovantes').createSignedUrl(path, 3600).
-// The raw storage path is NEVER used directly as an image src (private bucket).
+// The screen reads top-down as the arithmetic actually runs: freight value, the
+// percentage applied to it, the gross commission, the deductions, the balance.
+// PRODUCT.md records that the driver must be able to trace his own money; this
+// screen is where that promise is kept.
 //
-// Corporate proxy note (Netscope): All Supabase HTTPS requests (data + storage)
-// go through the system proxy automatically via the React Native networking stack.
-// No code changes are needed, but the device must trust the proxy CA certificate.
+// comprovanteUrl in the DB is a private Supabase Storage path. A signed URL is
+// generated here at render time (3600s) — the raw path is NEVER used as an
+// image source.
 //
-// Layer: app — may import from components/, hooks/, lib/ (only via mobileAuth for auth)
+// Corporate proxy note (Netscope): Supabase HTTPS requests (data + storage) go
+// through the system proxy. No code change needed, but the device must trust
+// the proxy CA certificate.
+//
+// Layer: app — may import from components/, hooks/, lib/.
 
 import { useCallback, useEffect, useState } from 'react'
-import {
-  ActivityIndicator,
-  Image,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from 'react-native'
+import { ActivityIndicator, Image, ScrollView, View } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { supabase } from '../../../lib/supabase/client'
-import { OfflineBanner } from '../../../components/ui/OfflineBanner'
-import { Card } from '../../../components/ui/Card'
-import { Badge } from '../../../components/ui/Badge'
+import { Text } from '../../../components/ui/Text'
+import { Surface } from '../../../components/ui/Surface'
+import { Chip } from '../../../components/ui/Chip'
+import { DataRow } from '../../../components/ui/DataRow'
+import { Banner } from '../../../components/ui/Banner'
+import { TopAppBar } from '../../../components/ui/TopAppBar'
+import { formatDate, formatReais } from '../../../lib/utils/format'
+import { shape, space } from '../../../lib/theme'
+import { makeStyles, useTheme } from '../../../lib/theme/ThemeProvider'
 import type { Acerto } from '@fretagro/types'
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────────────────────
-
-function centavosToReais(centavos: number): string {
-  return (centavos / 100).toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  })
-}
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  })
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Sub-components
-// ─────────────────────────────────────────────────────────────────────────────
-
-interface FinanceRowProps {
-  label: string
-  value: number
-  emphasized?: boolean
-  negative?: boolean
-}
-
-function FinanceRow({ label, value, emphasized = false, negative = false }: FinanceRowProps) {
-  const textColor = negative
-    ? 'text-red-400'
-    : emphasized
-      ? 'text-primary'
-      : 'text-white'
-
-  return (
-    <View className="flex-row items-center justify-between py-2">
-      <Text className={`${emphasized ? 'font-bold text-base' : 'text-gray-400 text-sm'}`}>
-        {label}
-      </Text>
-      <Text className={`font-semibold ${emphasized ? 'text-base' : 'text-sm'} ${textColor}`}>
-        {centavosToReais(value)}
-      </Text>
-    </View>
-  )
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Screen
-// ─────────────────────────────────────────────────────────────────────────────
-
 export default function AcertoDetailScreen() {
+  const { colors } = useTheme()
+  const styles = useStyles()
   const { id } = useLocalSearchParams<{ id: string }>()
   const router = useRouter()
 
@@ -105,12 +57,12 @@ export default function AcertoDetailScreen() {
         .single()
 
       if (fetchError) throw fetchError
-      if (!data) throw new Error('Acerto não encontrado')
+      if (!data) throw new Error('not-found')
 
       const row = data as Acerto
       setAcerto(row)
 
-      // Generate signed URL for private storage path — NEVER use path directly as src
+      // Signed URL for the private storage path — never use the path directly.
       if (row.comprovanteUrl) {
         const { data: signedData, error: signError } = await supabase.storage
           .from('comprovantes')
@@ -119,11 +71,12 @@ export default function AcertoDetailScreen() {
         if (!signError && signedData?.signedUrl) {
           setComprovanteSignedUrl(signedData.signedUrl)
         }
-        // If signing fails, we simply don't show the image — non-fatal
+        // Signing failure is non-fatal: the breakdown still renders.
       }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro ao carregar acerto'
-      setError(message)
+    } catch {
+      setError(
+        'Não foi possível carregar este acerto. Verifique o sinal e toque em Tentar novamente.',
+      )
     } finally {
       setLoading(false)
     }
@@ -135,100 +88,133 @@ export default function AcertoDetailScreen() {
 
   if (loading) {
     return (
-      <View className="flex-1 bg-background items-center justify-center">
-        <OfflineBanner />
-        <ActivityIndicator color="#22C55E" size="large" />
-      </View>
-    )
-  }
-
-  if (error || !acerto) {
-    return (
-      <View className="flex-1 bg-background">
-        <OfflineBanner />
-        <View className="flex-1 items-center justify-center px-6 gap-3">
-          <Text className="text-red-400 text-center">
-            {error ?? 'Acerto não encontrado.'}
-          </Text>
-          <Pressable
-            className="mt-4 min-h-[44px] bg-surface rounded-xl px-6 items-center justify-center"
-            onPress={() => router.back()}
-          >
-            <Text className="text-white font-semibold">Voltar</Text>
-          </Pressable>
+      <View style={styles.screen}>
+        <TopAppBar title="Acerto" onBack={() => router.back()} />
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </View>
     )
   }
 
+  if (error != null || acerto == null) {
+    return (
+      <View style={styles.screen}>
+        <TopAppBar title="Acerto" onBack={() => router.back()} />
+        <View style={styles.padded}>
+          <Banner
+            message={error ?? 'Este acerto não foi encontrado.'}
+            action={{ label: 'Tentar novamente', onPress: fetchAcerto }}
+          />
+        </View>
+      </View>
+    )
+  }
+
+  const pago = acerto.status === 'realizado'
   const settledAt = acerto.realizadoEm ?? acerto.createdAt
 
   return (
-    <View className="flex-1 bg-background">
-      <OfflineBanner />
+    <View style={styles.screen}>
+      <TopAppBar
+        title="Acerto"
+        subtitle={pago ? `Pago em ${formatDate(settledAt)}` : `Aberto em ${formatDate(settledAt)}`}
+        onBack={() => router.back()}
+      />
 
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
-        {/* Header */}
-        <View className="flex-row items-center gap-3 mb-4">
-          <Pressable
-            className="min-h-[44px] min-w-[44px] items-center justify-center"
-            onPress={() => router.back()}
-            accessibilityRole="button"
-            accessibilityLabel="Voltar"
-          >
-            <Text className="text-primary text-base font-semibold">← Voltar</Text>
-          </Pressable>
-        </View>
-
-        <View className="flex-row items-center gap-2 mb-1">
-          <Text className="text-white text-2xl font-bold">Detalhe do Acerto</Text>
-          <Badge label="Realizado" variant="success" />
-        </View>
-        <Text className="text-gray-400 text-sm mb-6">
-          Realizado em {formatDate(settledAt)}
-        </Text>
-
-        {/* Financial breakdown */}
-        <Card className="mb-4">
-          <Text className="text-gray-400 text-xs font-medium uppercase tracking-wide mb-2">
-            Resumo Financeiro
-          </Text>
-
-          <FinanceRow label="Valor do frete" value={acerto.valorFrete} />
-          <Text className="text-gray-600 text-xs mb-1">
-            Comissão: {acerto.percentualComissao}%
-          </Text>
-
-          <View className="border-b border-gray-700 my-1" />
-
-          <FinanceRow label="Comissão bruta" value={acerto.valorComissao} />
-          <FinanceRow
-            label="Deduções"
-            value={acerto.totalDeducoes}
-            negative={acerto.totalDeducoes > 0}
-          />
-
-          <View className="border-b border-gray-700 my-1" />
-
-          <FinanceRow label="A receber" value={acerto.saldoFinal} emphasized />
-        </Card>
-
-        {/* Receipt / comprovante — displayed only when a signed URL is available */}
-        {comprovanteSignedUrl && (
-          <Card>
-            <Text className="text-gray-400 text-xs font-medium uppercase tracking-wide mb-3">
-              Comprovante
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <Surface level={1} padding="lg" style={styles.hero}>
+          <View style={styles.heroHeader}>
+            <Text role="titleMedium" tone="variant">
+              {pago ? 'Você recebeu' : 'A receber'}
             </Text>
+            <Chip
+              label={pago ? 'Pago' : 'Aguardando pagamento'}
+              tone={pago ? 'done' : 'waiting'}
+              icon={pago ? 'checkmark-circle' : 'hourglass-outline'}
+            />
+          </View>
+
+          <Text role="figureLarge" tone="strong">
+            {formatReais(acerto.saldoFinal)}
+          </Text>
+        </Surface>
+
+        {/* The arithmetic, in the order it runs. */}
+        <Surface level={1} padding="lg" style={styles.card}>
+          <Text role="titleMedium">Como chegou nesse valor</Text>
+
+          <View style={styles.rows}>
+            <DataRow label="Valor do frete" value={formatReais(acerto.valorFrete)} />
+            <DataRow label="Sua comissão" value={`${acerto.percentualComissao}%`} />
+            <DataRow
+              label="Comissão bruta"
+              value={formatReais(acerto.valorComissao)}
+              divided
+            />
+            <DataRow label="Deduções" value={`− ${formatReais(acerto.totalDeducoes)}`} />
+            <DataRow
+              label="A receber"
+              value={formatReais(acerto.saldoFinal)}
+              emphasis="positive"
+              divided
+            />
+          </View>
+        </Surface>
+
+        {comprovanteSignedUrl != null && (
+          <Surface level={1} padding="lg" style={styles.card}>
+            <Text role="titleMedium">Comprovante</Text>
             <Image
               source={{ uri: comprovanteSignedUrl }}
-              className="w-full rounded-xl"
-              style={{ height: 240 }}
+              style={styles.comprovante}
               resizeMode="contain"
               accessibilityLabel="Comprovante do acerto"
             />
-          </Card>
+          </Surface>
         )}
       </ScrollView>
     </View>
   )
 }
+
+const useStyles = makeStyles(({ colors }) => ({
+  screen: {
+    flex: 1,
+    backgroundColor: colors.surface,
+  },
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  padded: {
+    padding: space.base,
+  },
+  content: {
+    paddingHorizontal: space.base,
+    paddingBottom: space.xxl,
+    gap: space.base,
+  },
+  hero: {
+    gap: space.sm,
+  },
+  heroHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: space.md,
+  },
+  card: {
+    gap: space.base,
+  },
+  rows: {
+    gap: space.sm,
+  },
+  comprovante: {
+    width: '100%',
+    height: 260,
+    borderRadius: shape.medium,
+    backgroundColor: colors.surfaceContainerLowest,
+  },
+}))

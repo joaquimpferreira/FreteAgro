@@ -1,155 +1,38 @@
 // app/(app)/historico/[id].tsx
-// US5: Trip detail — trechos, expenses, refuels, and optional acerto summary.
+// US5: trip detail — legs, refuels, expenses, and the settlement when it exists.
 //
-// Corporate proxy note (Netscope): All Supabase HTTPS requests go through the
-// system proxy automatically via the React Native networking stack. No code
-// changes are needed, but the device must trust the proxy CA certificate.
-// Signed URLs for private storage buckets are generated at render time (3600 s)
-// and are never stored in DB — only storage paths are persisted (see T034).
+// Corporate proxy note (Netscope): Supabase HTTPS requests go through the system
+// proxy via the React Native networking stack. No code change needed, but the
+// device must trust the proxy CA. Signed URLs for private buckets are generated
+// at render time (3600s) and never persisted — only storage paths are (T034).
 //
-// Layer: app — may import from components/, hooks/, lib/ (only via mobileAuth for auth).
+// Layer: app — may import from components/, hooks/, lib/.
 
 import { useCallback, useEffect, useState } from 'react'
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from 'react-native'
+import { ActivityIndicator, ScrollView, View } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { supabase } from '../../../lib/supabase/client'
-import { OfflineBanner } from '../../../components/ui/OfflineBanner'
-import { Badge } from '../../../components/ui/Badge'
-import { Card } from '../../../components/ui/Card'
+import { Text } from '../../../components/ui/Text'
+import { Surface } from '../../../components/ui/Surface'
+import { Chip } from '../../../components/ui/Chip'
+import { DataRow } from '../../../components/ui/DataRow'
+import { Banner } from '../../../components/ui/Banner'
+import { SyncStatus } from '../../../components/ui/SyncStatus'
+import { TopAppBar } from '../../../components/ui/TopAppBar'
+import { TrechoCard } from '../../../components/viagem/TrechoCard'
 import { DespesaItem } from '../../../components/despesas/DespesaItem'
-import type { Frete, Lancamento } from '@fretagro/types'
-import type { TrechoKm, Abastecimento } from '@fretagro/types'
-import type { Acerto } from '@fretagro/types'
+import { formatDate, formatKm, formatReais } from '../../../lib/utils/format'
+import { space } from '../../../lib/theme'
+import { makeStyles, useTheme } from '../../../lib/theme/ThemeProvider'
+import type { Frete, Lancamento, TrechoKm, Abastecimento, Acerto } from '@fretagro/types'
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────────────────────
-
-function centavosToReais(centavos: number): string {
-  return (centavos / 100).toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  })
+const TIPO_CARGA_LABELS: Record<string, string> = {
+  grao: 'Grão',
+  oleo_soja: 'Óleo de soja',
+  farelo: 'Farelo',
+  fertilizante: 'Fertilizante',
+  outro: 'Outro',
 }
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  })
-}
-
-/**
- * Compute diesel economy for a leg:
- *   mediaDiesel = kmRodado / totalLitrosDiesel
- * Only diesel abastecimentos linked to this trecho are used (not arla).
- */
-function calcularMediaDiesel(
-  trecho: TrechoKm,
-  abastecimentos: Abastecimento[],
-): number | null {
-  if (!trecho.kmRodado) return null
-  const litros = abastecimentos
-    .filter((a) => a.trechoId === trecho.id && a.subtipo === 'diesel')
-    .reduce((sum, a) => sum + a.litros, 0)
-  if (litros === 0) return null
-  return trecho.kmRodado / litros
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Sub-components
-// ─────────────────────────────────────────────────────────────────────────────
-
-interface TrechoRowProps {
-  trecho: TrechoKm
-  abastecimentos: Abastecimento[]
-}
-
-function TrechoRow({ trecho, abastecimentos }: TrechoRowProps) {
-  const mediaDiesel = calcularMediaDiesel(trecho, abastecimentos)
-  const isClosed = trecho.fechadoEm != null
-
-  return (
-    <View className={`rounded-xl px-4 py-3 mb-2 ${isClosed ? 'bg-surface' : 'bg-surface border border-primary'}`}>
-      <View className="flex-row items-center gap-2 mb-1">
-        <Badge
-          label={trecho.tipo === 'vazio' ? 'Vazio' : 'Carregado'}
-          variant={trecho.tipo === 'vazio' ? 'muted' : 'warning'}
-        />
-        {!isClosed && <Badge label="Em andamento" variant="success" />}
-      </View>
-      <Text className="text-gray-400 text-sm">
-        Início: {trecho.kmInicial.toLocaleString('pt-BR')} km
-      </Text>
-      {isClosed && trecho.kmFinal != null && (
-        <Text className="text-gray-400 text-sm">
-          Fim: {trecho.kmFinal.toLocaleString('pt-BR')} km
-        </Text>
-      )}
-      {isClosed && trecho.kmRodado != null && (
-        <Text className="text-white font-semibold text-sm">
-          Rodado: {trecho.kmRodado.toLocaleString('pt-BR')} km
-        </Text>
-      )}
-      {mediaDiesel != null && (
-        <Text className="text-green-400 text-sm">
-          Média diesel: {mediaDiesel.toFixed(2)} km/L
-        </Text>
-      )}
-    </View>
-  )
-}
-
-interface AcertoSummaryProps {
-  acerto: Acerto
-}
-
-function AcertoSummary({ acerto }: AcertoSummaryProps) {
-  return (
-    <Card>
-      <Text className="text-white font-bold text-base mb-2">Acerto</Text>
-      <View className="gap-1">
-        <View className="flex-row justify-between">
-          <Text className="text-gray-400 text-sm">Comissão bruta</Text>
-          <Text className="text-white text-sm">{centavosToReais(acerto.valorComissao)}</Text>
-        </View>
-        <View className="flex-row justify-between">
-          <Text className="text-gray-400 text-sm">Deduções</Text>
-          <Text className="text-red-400 text-sm">−{centavosToReais(acerto.totalDeducoes)}</Text>
-        </View>
-        <View className="flex-row justify-between mt-1 pt-1 border-t border-surface">
-          <Text className="text-white font-semibold text-sm">A receber</Text>
-          <Text className="text-green-400 font-bold text-sm">
-            {centavosToReais(acerto.saldoFinal)}
-          </Text>
-        </View>
-        <View className="flex-row justify-between mt-1">
-          <Text className="text-gray-400 text-sm">Status</Text>
-          <Badge
-            label={acerto.status === 'realizado' ? 'Realizado' : 'Pendente'}
-            variant={acerto.status === 'realizado' ? 'success' : 'warning'}
-          />
-        </View>
-        {acerto.realizadoEm && (
-          <Text className="text-gray-500 text-xs mt-1">
-            Liquidado em {formatDate(acerto.realizadoEm)}
-          </Text>
-        )}
-      </View>
-    </Card>
-  )
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Screen
-// ─────────────────────────────────────────────────────────────────────────────
 
 interface DetailData {
   frete: Frete
@@ -157,21 +40,20 @@ interface DetailData {
   lancamentos: Lancamento[]
   abastecimentos: Abastecimento[]
   acerto: Acerto | null
-  // Map from storage path → signed URL resolved at render time
+  /** storage path → signed URL, resolved at render time */
   signedUrls: Record<string, string>
 }
 
 export default function HistoricoDetailScreen() {
+  const { colors } = useTheme()
+  const styles = useStyles()
   const { id } = useLocalSearchParams<{ id: string }>()
   const router = useRouter()
   const [data, setData] = useState<DetailData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  /**
-   * Resolve signed URLs for all storage paths found in lancamentos and abastecimentos.
-   * Storage paths are NEVER signed URLs — they are resolved here at render time (T034).
-   */
+  /** Storage paths are NEVER signed URLs — they are resolved here (T034). */
   const resolveSignedUrls = useCallback(
     async (paths: string[]): Promise<Record<string, string>> => {
       const uniquePaths = [...new Set(paths.filter(Boolean))]
@@ -188,7 +70,7 @@ export default function HistoricoDetailScreen() {
               results[path] = urlData.signedUrl
             }
           } catch {
-            // Non-fatal: photo will just not render
+            // Non-fatal: the photo simply does not render.
           }
         }),
       )
@@ -210,11 +92,7 @@ export default function HistoricoDetailScreen() {
         { data: acertosData, error: acertosErr },
       ] = await Promise.all([
         supabase.from('fretes').select('*').eq('id', id).single(),
-        supabase
-          .from('trechos_km')
-          .select('*')
-          .eq('freteId', id)
-          .order('ordem', { ascending: true }),
+        supabase.from('trechos_km').select('*').eq('freteId', id).order('ordem', { ascending: true }),
         supabase.from('lancamentos').select('*').eq('freteId', id),
         supabase.from('abastecimentos').select('*').eq('freteId', id),
         supabase
@@ -234,13 +112,10 @@ export default function HistoricoDetailScreen() {
       const lancamentos = (lancamentosData as Lancamento[]) ?? []
       const abastecimentos = (abastecimentosData as Abastecimento[]) ?? []
 
-      // Collect all storage paths to resolve to signed URLs at render time
       const storagePaths: string[] = [
         ...lancamentos.map((l) => l.fotoUrl).filter((p): p is string => !!p),
         ...abastecimentos.map((a) => a.fotoUrl).filter((p): p is string => !!p),
       ]
-
-      const signedUrls = await resolveSignedUrls(storagePaths)
 
       setData({
         frete: freteData as Frete,
@@ -248,11 +123,12 @@ export default function HistoricoDetailScreen() {
         lancamentos,
         abastecimentos,
         acerto: (acertosData as Acerto[])?.[0] ?? null,
-        signedUrls,
+        signedUrls: await resolveSignedUrls(storagePaths),
       })
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Erro ao carregar detalhe da viagem'
-      setError(msg)
+    } catch {
+      setError(
+        'Não foi possível carregar esta viagem. Verifique o sinal e toque em Tentar novamente.',
+      )
     } finally {
       setLoading(false)
     }
@@ -264,109 +140,106 @@ export default function HistoricoDetailScreen() {
 
   if (loading) {
     return (
-      <View className="flex-1 bg-background items-center justify-center">
-        <ActivityIndicator size="large" color="#22C55E" />
+      <View style={styles.screen}>
+        <TopAppBar title="Viagem" onBack={() => router.back()} />
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
       </View>
     )
   }
 
-  if (error || !data) {
+  if (error != null || data == null) {
     return (
-      <View className="flex-1 bg-background items-center justify-center px-6 gap-3">
-        <Text className="text-red-400 text-center">{error ?? 'Viagem não encontrada'}</Text>
-        <Pressable
-          className="bg-surface rounded-xl px-6 py-3 min-h-[44px] items-center justify-center"
-          onPress={() => router.back()}
-        >
-          <Text className="text-white font-semibold">Voltar</Text>
-        </Pressable>
+      <View style={styles.screen}>
+        <TopAppBar title="Viagem" onBack={() => router.back()} />
+        <View style={styles.padded}>
+          <Banner
+            message={error ?? 'Esta viagem não foi encontrada.'}
+            action={{ label: 'Tentar novamente', onPress: fetchDetail }}
+          />
+        </View>
       </View>
     )
   }
 
   const { frete, trechos, lancamentos, abastecimentos, acerto, signedUrls } = data
 
-  const kmTotalVazio = trechos
+  const kmVazio = trechos
     .filter((t) => t.tipo === 'vazio')
     .reduce((sum, t) => sum + (t.kmRodado ?? 0), 0)
-  const kmTotalCarregado = trechos
+  const kmCarregado = trechos
     .filter((t) => t.tipo === 'carregado')
     .reduce((sum, t) => sum + (t.kmRodado ?? 0), 0)
-  const kmTotalViagem = kmTotalVazio + kmTotalCarregado
+  const kmTotal = kmVazio + kmCarregado
+
+  const totalAbastecimentos = abastecimentos.reduce((acc, a) => acc + a.valorTotal, 0)
+  const totalDespesas = lancamentos.reduce((acc, l) => acc + l.valor, 0)
+
+  const periodo =
+    frete.dataFim != null
+      ? `${formatDate(frete.dataInicio)} – ${formatDate(frete.dataFim)}`
+      : formatDate(frete.dataInicio)
 
   return (
-    <View className="flex-1 bg-background">
-      <OfflineBanner />
-      <ScrollView className="flex-1" contentContainerClassName="px-4 pt-4 pb-8 gap-4">
-        {/* Back */}
-        <Pressable
-          className="flex-row items-center gap-1 mb-1 min-h-[44px] self-start"
-          onPress={() => router.back()}
-          accessibilityRole="button"
-          accessibilityLabel="Voltar ao histórico"
-        >
-          <Text className="text-primary text-base">← Histórico</Text>
-        </Pressable>
+    <View style={styles.screen}>
+      <TopAppBar
+        title={`${frete.origem} → ${frete.destino}`}
+        subtitle={periodo}
+        onBack={() => router.back()}
+      />
 
-        {/* Header */}
-        <Card>
-          <Text className="text-white font-bold text-lg">
-            {frete.origem} → {frete.destino}
-          </Text>
-          <Text className="text-gray-400 text-sm mt-1">
-            {formatDate(frete.dataInicio)}
-            {frete.dataFim ? ` – ${formatDate(frete.dataFim)}` : ''}
-          </Text>
-          <Text className="text-gray-400 text-sm">Carga: {frete.tipoCarga}</Text>
-          {frete.valorBruto > 0 && (
-            <Text className="text-green-400 text-sm mt-1">
-              Carta Frete: {centavosToReais(frete.valorBruto)}
-            </Text>
-          )}
-        </Card>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <SyncStatus />
 
-        {/* KM Summary */}
-        {kmTotalViagem > 0 && (
-          <Card>
-            <Text className="text-white font-bold text-base mb-2">Quilometragem</Text>
-            <View className="gap-1">
-              <View className="flex-row justify-between">
-                <Text className="text-gray-400 text-sm">Vazio</Text>
-                <Text className="text-white text-sm">{kmTotalVazio.toLocaleString('pt-BR')} km</Text>
-              </View>
-              <View className="flex-row justify-between">
-                <Text className="text-gray-400 text-sm">Carregado</Text>
-                <Text className="text-white text-sm">{kmTotalCarregado.toLocaleString('pt-BR')} km</Text>
-              </View>
-              <View className="flex-row justify-between pt-1 border-t border-surface mt-1">
-                <Text className="text-white font-semibold text-sm">Total</Text>
-                <Text className="text-white font-bold text-sm">{kmTotalViagem.toLocaleString('pt-BR')} km</Text>
-              </View>
-            </View>
-          </Card>
-        )}
+        <Surface level={1} padding="lg" style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text role="titleMedium">A viagem</Text>
+            <Chip
+              label={TIPO_CARGA_LABELS[frete.tipoCarga] ?? frete.tipoCarga}
+              tone="neutral"
+              icon="cube-outline"
+            />
+          </View>
+          <View style={styles.rows}>
+            {frete.valorBruto > 0 && (
+              <DataRow label="Carta Frete" value={formatReais(frete.valorBruto)} />
+            )}
+            {kmTotal > 0 && (
+              <>
+                <DataRow label="Km vazio" value={formatKm(kmVazio)} />
+                <DataRow label="Km carregado" value={formatKm(kmCarregado)} />
+                <DataRow
+                  label="Total rodado"
+                  value={formatKm(kmTotal)}
+                  emphasis="positive"
+                  divided
+                />
+              </>
+            )}
+          </View>
+        </Surface>
 
-        {/* Trechos */}
         {trechos.length > 0 && (
-          <View>
-            <Text className="text-white font-bold text-base mb-2">
-              Trechos ({trechos.length})
+          <View style={styles.section}>
+            <Text role="titleMedium" tone="variant">
+              {trechos.length} {trechos.length === 1 ? 'trecho' : 'trechos'}
             </Text>
-            {trechos.map((trecho) => (
-              <TrechoRow
+            {trechos.map((trecho, idx) => (
+              <TrechoCard
                 key={trecho.id}
                 trecho={trecho}
                 abastecimentos={abastecimentos}
+                numero={idx + 1}
               />
             ))}
           </View>
         )}
 
-        {/* Abastecimentos */}
         {abastecimentos.length > 0 && (
-          <View>
-            <Text className="text-white font-bold text-base mb-2">
-              Abastecimentos ({abastecimentos.length})
+          <View style={styles.section}>
+            <Text role="titleMedium" tone="variant">
+              Abastecimentos · {formatReais(totalAbastecimentos)}
             </Text>
             {abastecimentos.map((item) => (
               <DespesaItem
@@ -383,11 +256,10 @@ export default function HistoricoDetailScreen() {
           </View>
         )}
 
-        {/* Lancamentos */}
         {lancamentos.length > 0 && (
-          <View>
-            <Text className="text-white font-bold text-base mb-2">
-              Despesas ({lancamentos.length})
+          <View style={styles.section}>
+            <Text role="titleMedium" tone="variant">
+              Despesas · {formatReais(totalDespesas)}
             </Text>
             {lancamentos.map((item) => (
               <DespesaItem
@@ -402,11 +274,65 @@ export default function HistoricoDetailScreen() {
           </View>
         )}
 
-        {/* Acerto */}
         {acerto != null && acerto.status === 'realizado' && (
-          <AcertoSummary acerto={acerto} />
+          <Surface level={1} padding="lg" style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Text role="titleMedium">Acerto desta viagem</Text>
+              <Chip label="Pago" tone="done" icon="checkmark-circle" />
+            </View>
+            <View style={styles.rows}>
+              <DataRow label="Comissão bruta" value={formatReais(acerto.valorComissao)} />
+              <DataRow label="Deduções" value={`− ${formatReais(acerto.totalDeducoes)}`} />
+              <DataRow
+                label="Você recebeu"
+                value={formatReais(acerto.saldoFinal)}
+                emphasis="positive"
+                divided
+              />
+            </View>
+            {acerto.realizadoEm != null && (
+              <Text role="bodySmall" tone="faint">
+                Pago em {formatDate(acerto.realizadoEm)}.
+              </Text>
+            )}
+          </Surface>
         )}
       </ScrollView>
     </View>
   )
 }
+
+const useStyles = makeStyles(({ colors }) => ({
+  screen: {
+    flex: 1,
+    backgroundColor: colors.surface,
+  },
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  padded: {
+    padding: space.base,
+  },
+  content: {
+    paddingHorizontal: space.base,
+    paddingBottom: space.xxl,
+    gap: space.base,
+  },
+  card: {
+    gap: space.base,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: space.md,
+  },
+  rows: {
+    gap: space.sm,
+  },
+  section: {
+    gap: space.sm,
+  },
+}))

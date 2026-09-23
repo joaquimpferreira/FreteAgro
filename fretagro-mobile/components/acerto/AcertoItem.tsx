@@ -1,35 +1,13 @@
 // components/acerto/AcertoItem.tsx
-// US6: Tappable row displaying a settled (realizado) acerto.
-// Shows saldoFinal in reais, settlement date in pt-BR, and status badge.
-// min-h-[44px] required for accessibility touch target compliance.
-// Layer: components — may import from components/ui/ only
+// US6: a settled or open acerto, as one row.
+//
+// The money is the headline because it is what the driver is scanning for;
+// the date is supporting text; the status is a chip with a written label.
+// Layer: components — imports from components/ui and @fretagro/types only.
 
-import { Pressable, Text, View } from 'react-native'
-import { Badge } from '../ui/Badge'
+import { ListItem } from '../ui/ListItem'
+import { formatDate, formatReais } from '../../lib/utils/format'
 import type { Acerto } from '@fretagro/types'
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────────────────────
-
-function centavosToReais(centavos: number): string {
-  return (centavos / 100).toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  })
-}
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  })
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// AcertoItem
-// ─────────────────────────────────────────────────────────────────────────────
 
 interface AcertoItemProps {
   acerto: Acerto
@@ -41,26 +19,18 @@ export function AcertoItem({ acerto, onPress }: AcertoItemProps) {
   const displayDate = isPendente ? acerto.createdAt : (acerto.realizadoEm ?? acerto.createdAt)
 
   return (
-    <Pressable
-      className="bg-surface rounded-xl px-4 py-3 mb-3 min-h-[60px] flex-row items-center justify-between active:opacity-70"
+    <ListItem
+      headline={formatReais(acerto.saldoFinal)}
+      supporting={
+        isPendente ? `Aberto em ${formatDate(displayDate)}` : `Pago em ${formatDate(displayDate)}`
+      }
+      chip={
+        isPendente
+          ? { label: 'Aguardando pagamento', tone: 'waiting' }
+          : { label: 'Pago', tone: 'done' }
+      }
+      leadingIcon={isPendente ? 'hourglass-outline' : 'checkmark-circle-outline'}
       onPress={() => onPress(acerto.id)}
-      accessibilityRole="button"
-      accessibilityLabel={`Acerto de ${centavosToReais(acerto.saldoFinal)} ${isPendente ? 'a receber' : 'realizado em ' + formatDate(displayDate)}`}
-    >
-      <View className="flex-1 gap-1">
-        <Text className="text-white font-semibold text-base">
-          {centavosToReais(acerto.saldoFinal)}
-        </Text>
-        <Text className="text-gray-400 text-sm">
-          {isPendente ? `Aberto em ${formatDate(displayDate)}` : formatDate(displayDate)}
-        </Text>
-      </View>
-
-      {isPendente ? (
-        <Badge label="A receber" variant="warning" />
-      ) : (
-        <Badge label="Realizado" variant="success" />
-      )}
-    </Pressable>
+    />
   )
 }

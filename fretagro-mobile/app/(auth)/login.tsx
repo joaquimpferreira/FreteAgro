@@ -1,20 +1,29 @@
 // app/(auth)/login.tsx
-// US1: Driver login screen.
-// Reads frotaNome from MMKV (persisted during account activation in ativar.tsx).
-// Calls mobileAuth.signIn — never imports Supabase client directly (constitution M-II).
+// US1: Driver login.
+// Reads frotaNome from MMKV (persisted during account activation).
+// Calls mobileAuth.signIn — never imports the Supabase client directly (constitution M-II).
 
 import { useState, useEffect } from 'react'
-import { View, Text, KeyboardAvoidingView, Platform, ScrollView } from 'react-native'
+import { View, KeyboardAvoidingView, Platform, ScrollView } from 'react-native'
+import Animated from 'react-native-reanimated'
 import { useRouter } from 'expo-router'
 import { MMKV } from 'react-native-mmkv'
+import { Ionicons } from '@expo/vector-icons'
+import { Text } from '../../components/ui/Text'
 import { Button } from '../../components/ui/Button'
-import { Input } from '../../components/ui/Input'
+import { TextField } from '../../components/ui/TextField'
+import { Banner } from '../../components/ui/Banner'
+import { shape, space } from '../../lib/theme'
+import { makeStyles, useTheme } from '../../lib/theme/ThemeProvider'
+import { reveal } from '../../lib/theme/motion'
 import * as mobileAuth from '../../lib/auth/mobileAuth'
 
 const storage = new MMKV({ id: 'app_prefs' })
 
 export default function LoginScreen() {
   const router = useRouter()
+  const { colors } = useTheme()
+  const styles = useStyles()
   const [frotaNome, setFrotaNome] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -28,7 +37,7 @@ export default function LoginScreen() {
 
   async function handleLogin() {
     if (!email.trim() || !password) {
-      setError('Preencha e-mail e senha.')
+      setError('Preencha o e-mail e a senha para entrar.')
       return
     }
     setError('')
@@ -38,7 +47,7 @@ export default function LoginScreen() {
       router.replace('/(app)/')
     } catch (err: unknown) {
       const message =
-        err instanceof Error ? err.message : 'Erro ao fazer login. Tente novamente.'
+        err instanceof Error ? err.message : 'Não foi possível entrar. Tente novamente.'
       setError(message)
     } finally {
       setLoading(false)
@@ -47,56 +56,97 @@ export default function LoginScreen() {
 
   return (
     <KeyboardAvoidingView
-      className="flex-1 bg-background"
+      style={styles.screen}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView
-        contentContainerClassName="flex-grow justify-center px-6 py-12"
+        contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        <View className="gap-8">
-          {/* Header */}
-          <View className="items-center gap-2">
-            <Text className="text-3xl font-bold text-white">FreteAgro</Text>
-            {frotaNome ? (
-              <Text className="text-base text-gray-400">{frotaNome}</Text>
-            ) : null}
-            <Text className="text-sm text-gray-500 mt-1">
-              Faça login para continuar
-            </Text>
+        <Animated.View entering={reveal(0)} style={styles.header}>
+          <View style={styles.mark}>
+            <Ionicons name="bus" size={32} color={colors.onPrimaryFill} accessible={false} />
           </View>
+          <Text role="headlineMedium">FreteAgro</Text>
+          <Text role="bodyLarge" tone="variant" style={styles.centered}>
+            {frotaNome !== '' ? frotaNome : 'Entre para registrar suas viagens'}
+          </Text>
+        </Animated.View>
 
-          {/* Form */}
-          <View className="gap-4">
-            <Input
-              label="E-mail"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoComplete="email"
-              placeholder="seu@email.com"
-            />
-            <Input
-              label="Senha"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              autoComplete="password"
-              placeholder="••••••••"
-            />
-            {error ? (
-              <Text className="text-sm text-red-500 text-center">{error}</Text>
-            ) : null}
-            <Button
-              label="Entrar"
-              onPress={handleLogin}
-              loading={loading}
-              disabled={loading}
-            />
-          </View>
-        </View>
+        <Animated.View entering={reveal(1)} style={styles.form}>
+          <TextField
+            label="E-mail"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoComplete="email"
+            placeholder="seu@email.com"
+            returnKeyType="next"
+          />
+          <TextField
+            label="Senha"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            autoComplete="password"
+            placeholder="Sua senha"
+            returnKeyType="done"
+            onSubmitEditing={handleLogin}
+          />
+
+          {error !== '' && <Banner message={error} />}
+
+          <Button
+            label="Entrar"
+            onPress={handleLogin}
+            loading={loading}
+            disabled={loading}
+            prominent
+          />
+        </Animated.View>
+
+        <Animated.View entering={reveal(2)}>
+          <Text role="bodySmall" tone="faint" style={styles.centered}>
+            Sua conta é criada pelo dono da frota. Se você ainda não tem acesso, peça o
+            convite a ele pelo WhatsApp.
+          </Text>
+        </Animated.View>
       </ScrollView>
     </KeyboardAvoidingView>
   )
 }
+
+const useStyles = makeStyles(({ colors }) => ({
+  screen: {
+    flex: 1,
+    backgroundColor: colors.surface,
+  },
+  content: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: space.xl,
+    paddingVertical: space.xxxl,
+    gap: space.xxl,
+  },
+  header: {
+    alignItems: 'center',
+    gap: space.sm,
+  },
+  mark: {
+    width: 64,
+    height: 64,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: shape.large,
+    backgroundColor: colors.primaryFill,
+    marginBottom: space.sm,
+  },
+  centered: {
+    textAlign: 'center',
+  },
+  form: {
+    gap: space.lg,
+  },
+}))

@@ -1,86 +1,58 @@
 // components/acerto/SaldoCard.tsx
-// US6: Card showing the driver's pending settlement balance.
-// Displays valorComissao, totalDeducoes, and saldoFinal (in reais).
-// Read-only (FR-034) — no edit actions.
-// Layer: components — may import from components/ui/ only
+// US6: the driver's pending settlement balance.
+//
+// The balance leads as a figure, then the two lines that produce it. That
+// order is the point of the product: PRODUCT.md records that the driver must
+// be able to trace his own money, so the total never appears without the
+// commission and the deductions reachable right under it.
+//
+// Read-only (FR-034) — the owner's panel is authoritative, and the card says so.
+// Layer: components — imports from components/ui and hooks types only.
 
-import { Text, View } from 'react-native'
-import { Card } from '../ui/Card'
+import { View, StyleSheet } from 'react-native'
+import { Text } from '../ui/Text'
+import { Surface } from '../ui/Surface'
+import { DataRow } from '../ui/DataRow'
+import { formatReais } from '../../lib/utils/format'
+import { space } from '../../lib/theme'
 import type { PendingBalance } from '../../hooks/useAcerto'
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────────────────────
-
-function centavosToReais(centavos: number): string {
-  return (centavos / 100).toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  })
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Row sub-component
-// ─────────────────────────────────────────────────────────────────────────────
-
-interface SaldoRowProps {
-  label: string
-  value: number
-  emphasized?: boolean
-  negative?: boolean
-}
-
-function SaldoRow({ label, value, emphasized = false, negative = false }: SaldoRowProps) {
-  const textColor = negative
-    ? 'text-red-400'
-    : emphasized
-      ? 'text-primary'
-      : 'text-white'
-
-  return (
-    <View className="flex-row items-center justify-between py-1">
-      <Text className={`text-sm ${emphasized ? 'font-bold text-base' : 'text-gray-400'}`}>
-        {label}
-      </Text>
-      <Text className={`font-semibold ${emphasized ? 'text-base' : 'text-sm'} ${textColor}`}>
-        {centavosToReais(value)}
-      </Text>
-    </View>
-  )
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SaldoCard
-// ─────────────────────────────────────────────────────────────────────────────
 
 interface SaldoCardProps {
   balance: PendingBalance
 }
 
 export function SaldoCard({ balance }: SaldoCardProps) {
+  const nada = balance.saldoFinal === 0 && balance.valorComissao === 0
+
   return (
-    <Card className="gap-1">
-      <Text className="text-gray-400 text-xs font-medium uppercase tracking-wide mb-2">
-        Saldo a receber
+    <Surface level={1} padding="lg" style={styles.card}>
+      <Text role="titleMedium" tone="variant">
+        A receber
       </Text>
 
-      <SaldoRow label="Comissão bruta" value={balance.valorComissao} />
+      <Text role="figureLarge" tone={nada ? 'faint' : 'strong'}>
+        {formatReais(balance.saldoFinal)}
+      </Text>
 
-      <View className="border-b border-gray-700 my-1" />
+      <View style={styles.rows}>
+        <DataRow label="Comissão bruta" value={formatReais(balance.valorComissao)} />
+        <DataRow label="Deduções" value={`− ${formatReais(balance.totalDeducoes)}`} />
+      </View>
 
-      <SaldoRow
-        label="Deduções"
-        value={balance.totalDeducoes}
-        negative={balance.totalDeducoes > 0}
-      />
-
-      <View className="border-b border-gray-700 my-1" />
-
-      <SaldoRow
-        label="A receber"
-        value={balance.saldoFinal}
-        emphasized
-      />
-    </Card>
+      <Text role="bodySmall" tone="faint">
+        Estimativa das viagens ainda não acertadas. O valor final é o que o dono da
+        frota confirmar no painel.
+      </Text>
+    </Surface>
   )
 }
+
+const styles = StyleSheet.create({
+  card: {
+    gap: space.xs,
+  },
+  rows: {
+    gap: space.sm,
+    marginTop: space.md,
+  },
+})

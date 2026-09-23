@@ -1,20 +1,31 @@
 // app/(app)/viagem/encerrar.tsx
-// Close Trip screen — collects kmFinal for the last leg, shows ViagemResumo for confirmation,
-// then closes the trip. Trip becomes immutable after this action.
-// Layer: app — imports from store/ and components/ only.
+// Close Trip — collects the last leg's kmFinal, shows the full summary for
+// confirmation, then closes the trip. The trip is immutable afterwards, which
+// is why this is a two-step screen and not a single button.
+// Layer: app — imports from store/, lib/ and components/ only.
 
 import { useState } from 'react'
-import { View, Text, ScrollView, Alert } from 'react-native'
+import { View, ScrollView, Alert } from 'react-native'
 import { router } from 'expo-router'
 import * as Haptics from 'expo-haptics'
 import { useViagemStore } from '../../../store/viagemStore'
 import { drain } from '../../../lib/sync/syncQueue'
 import { ViagemResumo } from '../../../components/viagem/ViagemResumo'
+import { Text } from '../../../components/ui/Text'
 import { Button } from '../../../components/ui/Button'
-import { Input } from '../../../components/ui/Input'
-import { Card } from '../../../components/ui/Card'
+import { TextField } from '../../../components/ui/TextField'
+import { Surface } from '../../../components/ui/Surface'
+import { Chip } from '../../../components/ui/Chip'
+import { DataRow } from '../../../components/ui/DataRow'
+import { Banner } from '../../../components/ui/Banner'
+import { TopAppBar } from '../../../components/ui/TopAppBar'
+import { EmptyState } from '../../../components/ui/EmptyState'
+import { formatKm } from '../../../lib/utils/format'
+import { space } from '../../../lib/theme'
+import { makeStyles } from '../../../lib/theme/ThemeProvider'
 
 export default function EncerrarViagem() {
+  const styles = useStyles()
   const viagem = useViagemStore((s) => s.viagem)
   const encerrarViagem = useViagemStore((s) => s.encerrarViagem)
 
@@ -25,23 +36,29 @@ export default function EncerrarViagem() {
 
   if (!viagem) {
     return (
-      <View className="flex-1 bg-background items-center justify-center px-4">
-        <Text className="text-gray-400">Nenhuma viagem em andamento.</Text>
+      <View style={styles.screen}>
+        <TopAppBar title="Encerrar viagem" onBack={() => router.back()} />
+        <EmptyState
+          icon="car-outline"
+          title="Nenhuma viagem aberta"
+          description="Não há viagem para encerrar."
+        />
       </View>
     )
   }
 
   const trechoAtual = viagem.trechos[viagem.trechoAtualIndex]
+  const carregado = trechoAtual.tipo === 'carregado'
 
   function validateKm(): boolean {
     const kmFinalNum = parseInt(kmFinalInput, 10)
     if (!kmFinalInput.trim() || isNaN(kmFinalNum)) {
-      setKmFinalError('Informe o km final.')
+      setKmFinalError('Leia o km no painel e digite só os números.')
       return false
     }
     if (kmFinalNum <= trechoAtual.kmInicial) {
       setKmFinalError(
-        `Km final deve ser maior que o km inicial (${trechoAtual.kmInicial.toLocaleString('pt-BR')} km).`,
+        `O km de chegada precisa ser maior que o de saída (${formatKm(trechoAtual.kmInicial)}). Confira o número.`,
       )
       return false
     }
@@ -54,7 +71,7 @@ export default function EncerrarViagem() {
     setConfirmando(true)
   }
 
-  // Build a preview of trechos with the last one closed for the summary
+  // Preview of the legs with the last one closed, for the summary.
   const kmFinalNum = parseInt(kmFinalInput, 10)
   const trechosParaResumo = confirmando
     ? viagem.trechos.map((t, idx) => {
@@ -77,14 +94,16 @@ export default function EncerrarViagem() {
     try {
       encerrarViagem(kmFinalNum)
       // Fire-and-forget sync so the closed trip (CLOSE_TRECHO + CLOSE_VIAGEM)
-      // reaches the server right away when online, instead of waiting for the
-      // next connectivity change / app-foreground transition. Errors are handled
-      // inside drain() (retry + dead-letter); offline stays queued as before.
+      // reaches the server right away when online instead of waiting for the
+      // next connectivity change. drain() handles its own retry/dead-letter;
+      // offline stays queued as before.
       void drain()
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
       router.replace('/(app)/viagem/resumo')
-    } catch (err: any) {
-      Alert.alert('Erro', err?.message ?? 'Não foi possível encerrar a viagem.')
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : 'Não foi possível encerrar a viagem. Tente novamente.'
+      Alert.alert('Erro', message)
       setConfirmando(false)
     } finally {
       setSubmitting(false)
@@ -93,69 +112,129 @@ export default function EncerrarViagem() {
 
   if (confirmando) {
     return (
-      <ScrollView
-        className="flex-1 bg-background"
-        contentContainerClassName="px-4 py-6 gap-4"
-      >
-        <Text className="text-white text-2xl font-bold">Confirmar encerramento</Text>
-        <Text className="text-gray-400 text-sm">
-          Revise o resumo abaixo. Após confirmar, a viagem não poderá ser editada.
-        </Text>
-
-        <ViagemResumo
-          trechos={trechosParaResumo}
-          abastecimentos={viagem.abastecimentos}
-          despesas={viagem.despesas}
+      <View style={styles.screen}>
+        <TopAppBar
+          title="Confira antes de encerrar"
+          onBack={() => setConfirmando(false)}
         />
 
-        <Button
-          label="Confirmar encerramento"
-          onPress={handleConfirm}
-          loading={submitting}
-          variant="destructive"
-        />
-        <Button
-          label="Voltar"
-          onPress={() => setConfirmando(false)}
-          variant="secondary"
-          disabled={submitting}
-        />
-      </ScrollView>
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <Banner
+            tone="waiting"
+            message="Depois de encerrar, esta viagem não pode mais ser alterada. Confira os números abaixo — é com eles que o seu acerto é calculado."
+          />
+
+          <ViagemResumo
+            trechos={trechosParaResumo}
+            abastecimentos={viagem.abastecimentos}
+            despesas={viagem.despesas}
+          />
+
+          <View style={styles.actions}>
+            <Button
+              label="Encerrar viagem"
+              icon="flag"
+              onPress={handleConfirm}
+              loading={submitting}
+              prominent
+            />
+            <Button
+              label="Voltar e corrigir"
+              onPress={() => setConfirmando(false)}
+              variant="outlined"
+              disabled={submitting}
+            />
+          </View>
+        </ScrollView>
+      </View>
     )
   }
 
+  const kmDigitado = parseInt(kmFinalInput, 10)
+  const rodado =
+    !isNaN(kmDigitado) && kmDigitado > trechoAtual.kmInicial
+      ? kmDigitado - trechoAtual.kmInicial
+      : null
+
   return (
-    <ScrollView
-      className="flex-1 bg-background"
-      contentContainerClassName="px-4 py-6 gap-4"
-    >
-      <Text className="text-white text-2xl font-bold">Encerrar viagem</Text>
+    <View style={styles.screen}>
+      <TopAppBar title="Encerrar viagem" onBack={() => router.back()} />
 
-      <Card>
-        <Text className="text-gray-400 text-sm">Último trecho</Text>
-        <Text className="text-white text-base font-semibold mt-1">
-          {trechoAtual.tipo === 'vazio' ? 'Vazio' : 'Carregado'} — Km inicial:{' '}
-          {trechoAtual.kmInicial.toLocaleString('pt-BR')} km
-        </Text>
-      </Card>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <Surface level={1} padding="lg" style={styles.card}>
+          <View style={styles.header}>
+            <Text role="titleMedium">Último trecho</Text>
+            <Chip
+              label={carregado ? 'Carregado' : 'Vazio'}
+              tone="neutral"
+              icon={carregado ? 'cube' : 'cube-outline'}
+            />
+          </View>
+          <DataRow label="Km de saída" value={formatKm(trechoAtual.kmInicial)} />
+          {rodado != null && (
+            <DataRow
+              label="Rodado neste trecho"
+              value={formatKm(rodado)}
+              emphasis="positive"
+              divided
+            />
+          )}
+        </Surface>
 
-      <Input
-        label="Km final do último trecho"
-        value={kmFinalInput}
-        onChangeText={(v) => {
-          setKmFinalInput(v)
-          setKmFinalError(undefined)
-        }}
-        placeholder="Ex: 122500"
-        keyboardType="numeric"
-        error={kmFinalError}
-      />
+        <TextField
+          label="Km de chegada"
+          value={kmFinalInput}
+          onChangeText={(v) => {
+            setKmFinalInput(v)
+            setKmFinalError(undefined)
+          }}
+          placeholder="122500"
+          keyboardType="number-pad"
+          suffix="km"
+          hint="O número que está no painel agora."
+          error={kmFinalError}
+        />
 
-      <Button
-        label="Ver resumo e confirmar"
-        onPress={handleReview}
-        variant="primary"
-      />
-    </ScrollView>
+        <Button
+          label="Ver resumo"
+          icon="arrow-forward"
+          onPress={handleReview}
+          prominent
+          style={styles.submit}
+        />
+      </ScrollView>
+    </View>
   )
 }
+
+const useStyles = makeStyles(({ colors }) => ({
+  screen: {
+    flex: 1,
+    backgroundColor: colors.surface,
+  },
+  content: {
+    paddingHorizontal: space.base,
+    paddingBottom: space.xxxl,
+    gap: space.lg,
+  },
+  card: {
+    gap: space.md,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: space.md,
+  },
+  actions: {
+    gap: space.md,
+    marginTop: space.sm,
+  },
+  submit: {
+    marginTop: space.sm,
+  },
+}))

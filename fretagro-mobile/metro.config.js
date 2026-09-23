@@ -1,5 +1,4 @@
 const { getDefaultConfig } = require('expo/metro-config');
-const { withNativeWind } = require('nativewind/metro');
 const path = require('path');
 
 const projectRoot = __dirname;
@@ -58,9 +57,15 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
     return { type: 'sourceFile', filePath: SINGLETON_FILES[moduleName] };
   }
 
+  // Any node_modules path the HMR server hands back, not just the .pnpm store.
+  // The server reports the entry point as './node_modules/expo-router/entry'
+  // (relative to monorepoRoot) but resolves it from projectRoot, so resolution
+  // failed and the UnableToResolveError went uncaught and killed Metro — which
+  // looked like "hot reload is broken" but was actually "the dev server died
+  // on the first edit". Rebasing these onto monorepoRoot fixes both.
   if (
-    moduleName.startsWith('./node_modules/.pnpm/') ||
-    moduleName.startsWith('../node_modules/.pnpm/')
+    moduleName.startsWith('./node_modules/') ||
+    moduleName.startsWith('../node_modules/')
   ) {
     return context.resolveRequest(
       { ...context, originModulePath: monorepoRoot + '/.' },
@@ -71,4 +76,4 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   return context.resolveRequest(context, moduleName, platform);
 };
 
-module.exports = withNativeWind(config, { input: './global.css' });
+module.exports = config;
