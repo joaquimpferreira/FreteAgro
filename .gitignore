@@ -33,3 +33,7 @@ web-build/
 
 # Vercel
 .vercel
+
+# Impeccable — estado da ferramenta de design (briefs, payloads de decisão,
+# screenshots de review e logs de sessão). Saída de tooling, não código-fonte.
+.impeccable/
