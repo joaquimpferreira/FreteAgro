@@ -5,6 +5,20 @@
     This allows the developer to install a corporate/proxy CA cert in the emulator
     (Settings → Security → Install a certificate) so HTTPS requests work through
     SSL-intercepting corporate proxies.
+  - @raw/netskope_ca: a second, more reliable path to the same trust than the
+    Settings UI above. On some emulator system images (observed on a
+    sdk_gphone*_arm64 "Google Play" image, Android 15+/targetSdk 37)
+    CertInstaller cannot open a file pushed to /sdcard/Download — scoped
+    storage returns EACCES even though the file is world-readable — so the
+    manual "Install a certificate" flow never completes and `src="user"`
+    above has nothing to trust. Embedding the same corporate CA as a raw
+    resource sidesteps that flow entirely: it is compiled into the debug APK
+    and trusted directly, no OS-level cert install step required. This is
+    strictly a debug-overrides addition — release builds never reference
+    @raw/netskope_ca and are unaffected. The file itself
+    (res/raw/netskope_ca.pem, copied from ../../../../../certs/netskope-ca.pem)
+    is gitignored via the repo's blanket `*.pem` rule, so no corporate CA
+    material is committed.
   - domain-config for 10.0.2.2/localhost: allows cleartext HTTP to the Metro
     bundler dev server (http://10.0.2.2:8081). 10.0.2.2 is the emulator's
     special alias for the host machine and never exists on real devices.
@@ -15,6 +29,7 @@
         <trust-anchors>
             <certificates src="system" />
             <certificates src="user" />
+            <certificates src="@raw/netskope_ca" />
         </trust-anchors>
     </debug-overrides>
     <!-- Metro bundler runs over plain HTTP on the host machine -->
